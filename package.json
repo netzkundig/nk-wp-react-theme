@@ -1,0 +1,23 @@
+{
+  "name": "nk-react",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "wp-scripts start",
+    "build": "wp-scripts build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
+    "@wordpress/element": "^6.30.0",
+    "@wordpress/scripts": "^30.23.0"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.8.2"
+  }
+}
