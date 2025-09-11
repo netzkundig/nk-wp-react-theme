@@ -7,10 +7,19 @@
     "start": "wp-scripts start",
     "build": "wp-scripts build"
   },
-  "keywords": [],
+  "keywords": [
+    "wordpress",
+    "react",
+    "wordpress-theme",
+    "rest-api",
+    "react-router-dom",
+    "wp-scripts",
+    "client-side-rendering",
+    "spa"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Minimalist WordPress theme integrating React for client-side rendering via the REST API.",
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-react": "^7.27.1",
