@@ -3,9 +3,13 @@ Theme Name: NK React Theme
 Theme URI: https://netzkundig.com/
 Author: netzkundig
 Author URI: https://netzkundig.com/
-Description: Minimalistisches WordPress-Theme für React-Integration
+Description: Minimalist WordPress theme integrating React for client-side rendering via the REST API.
 Version: 1.0
 Text Domain: nk-react
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
+
+/* Gravity Forms SPA fallback: ensure forms are visible when injected via React */
+.gform_wrapper { display: block !important; visibility: visible !important; }
+.gform_wrapper .gform_body { display: block !important; }

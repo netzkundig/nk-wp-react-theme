@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { initGravityForms } from './utils/initGravityForms';
 
 const Page = ({ id }) => {
   const [data, setData] = useState(null);
@@ -16,6 +17,15 @@ const Page = ({ id }) => {
     return () => { active = false; };
   }, [id]);
 
+  // Hooks must be declared unconditionally at top level
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      initGravityForms(contentRef.current);
+    }
+  }, [data?.content?.rendered]);
+
   if (loading) return <div>Lade Seite...</div>;
   if (err) return <div>{err}</div>;
   if (!data) return null;
@@ -25,7 +35,7 @@ const Page = ({ id }) => {
   return (
     <article>
       <h1 dangerouslySetInnerHTML={{ __html: data.title.rendered }} />
-      <div dangerouslySetInnerHTML={{ __html: data.content.rendered }} />
+      <div ref={contentRef} dangerouslySetInnerHTML={{ __html: data.content.rendered }} />
     </article>
   );
 };

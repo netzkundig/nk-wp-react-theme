@@ -20,17 +20,17 @@ detect_in_comments() {
     return 0
   fi
 
-  # Extract comment lines: //, #, and /* */ blocks (approximation)
+  # Extract comment lines conservatively to avoid false positives from regex/string literals
   comments=$(awk '
     BEGIN{inblock=0}
     {
       line=$0
-      # Block comments
+      # Start/end block comments only when they start at the beginning of the line (after whitespace)
       if (inblock) { print line }
-      if (match(line,/\/\*/)) { inblock=1 }
+      if (match(line,/^[[:space:]]*\/\*/)) { inblock=1 }
       if (match(line,/\*\//)) { print line; inblock=0 }
-      # Line comments // or # (avoid URLs by ignoring ://)
-      if (match(line,/(^|[^:])\/\/|^[[:space:]]*#/)) { print line }
+      # Line comments: only treat // or # at start of line (after whitespace)
+      if (match(line,/^[[:space:]]*\/\//) || match(line,/^[[:space:]]*#/)) { print line }
     }
   ' <<< "$content")
 
@@ -60,4 +60,3 @@ if [ "$has_issues" -ne 0 ]; then
 fi
 
 exit 0
-
