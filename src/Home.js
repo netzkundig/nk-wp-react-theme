@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import BlockBodyClass from './BlockBodyClass';
 
 const Home = () => {
 
@@ -32,10 +33,13 @@ const Home = () => {
   if (!frontPageContent) return <div>Keine statische Frontpage definiert.</div>;
 
   return (
-    <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
-      <h1 className='wp-block-post-title'>{frontPageContent.title.rendered}</h1>
-      <div className='entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained' dangerouslySetInnerHTML={{ __html: frontPageContent.content.rendered }} />
-    </article>
+    <>
+      <BlockBodyClass blockNames={frontPageContent.blockNames || []} />
+      <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
+        <h1 className='wp-block-post-title'>{frontPageContent.title.rendered}</h1>
+        <div className='entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained' dangerouslySetInnerHTML={{ __html: frontPageContent.content.rendered }} />
+      </article>
+    </>
   );
 };
 

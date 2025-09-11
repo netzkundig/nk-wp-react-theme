@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import BlockBodyClass from './BlockBodyClass';
 import { initGravityForms } from './utils/initGravityForms';
 
 const Post = ({ id }) => {
@@ -37,10 +38,13 @@ const Post = ({ id }) => {
   document.title = `${data.title?.rendered || 'Beitrag'} – ${window.nkReactTheme?.siteTitle || ''}`;
 
   return (
-    <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
-      <h1 className='wp-block-post-title' dangerouslySetInnerHTML={{ __html: data.title.rendered }} />
-      <div ref={contentRef} dangerouslySetInnerHTML={{ __html: data.content.rendered }} />
-    </article>
+    <>
+      <BlockBodyClass blockNames={data.blockNames || []} />
+      <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
+        <h1 className='wp-block-post-title' dangerouslySetInnerHTML={{ __html: data.title.rendered }} />
+        <div ref={contentRef} dangerouslySetInnerHTML={{ __html: data.content.rendered }} />
+      </article>
+    </>
   );
 };
 

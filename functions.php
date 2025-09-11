@@ -100,3 +100,38 @@ add_action('rest_api_init', function () {
         }
     ));
 });
+
+// REST field: expose used block names for all post types supporting block editor (editor + show_in_rest)
+add_action('rest_api_init', function () {
+    $types = get_post_types(['show_in_rest' => true], 'names');
+    if (empty($types)) {
+        return;
+    }
+    foreach ($types as $type) {
+        if (!post_type_supports($type, 'editor')) {
+            continue; // skip types without block editor support
+        }
+        register_rest_field($type, 'blockNames', [
+            'get_callback' => function ($post) {
+                $content = get_post_field('post_content', $post['id']);
+                if (empty($content)) {
+                    return [];
+                }
+                $blocks = parse_blocks($content);
+                if (empty($blocks)) {
+                    return [];
+                }
+                // Flatten only top-level block names; extend if nested traversal needed
+                return array_values(array_filter(array_map(function ($block) {
+                    return isset($block['blockName']) ? $block['blockName'] : null;
+                }, $blocks)));
+            },
+            'schema' => [
+                'description' => 'List of Gutenberg block names used in the post content (top-level).',
+                'type'        => 'array',
+                'items'       => [ 'type' => 'string' ],
+                'context'     => ['view', 'edit'],
+            ],
+        ]);
+    }
+});
