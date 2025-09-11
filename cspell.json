@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "allowCompoundWords": true,
+  "useGitignore": true,
+  "ignorePaths": [
+    "node_modules",
+    "build",
+    "dist",
+    ".git",
+    "package-lock.json"
+  ],
+  "words": [
+    "WordPress",
+    "REST",
+    "NetzKundig",
+    "nkReactTheme",
+    "wpjson",
+    "jsx",
+    "babel"
+  ]
+}
+

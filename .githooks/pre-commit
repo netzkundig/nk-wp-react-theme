@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# pre-commit hook: lightly enforce English in code comments
+# Scans staged files for German characters/stopwords inside comment lines.
+
+has_issues=0
+
+# File globs to scan
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx|php|css|scss)$' || true)
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+detect_in_comments() {
+  file="$1"
+  # Read the staged version of the file
+  if ! content=$(git show ":$file" 2>/dev/null); then
+    return 0
+  fi
+
+  # Extract comment lines: //, #, and /* */ blocks (approximation)
+  comments=$(awk '
+    BEGIN{inblock=0}
+    {
+      line=$0
+      # Block comments
+      if (inblock) { print line }
+      if (match(line,/\/\*/)) { inblock=1 }
+      if (match(line,/\*\//)) { print line; inblock=0 }
+      # Line comments // or # (avoid URLs by ignoring ://)
+      if (match(line,/(^|[^:])\/\/|^[[:space:]]*#/)) { print line }
+    }
+  ' <<< "$content")
+
+  if [ -z "$comments" ]; then
+    return 0
+  fi
+
+  # Heuristics for German
+  GERMAN_CHARS='[äöüÄÖÜß]'
+  GERMAN_WORDS='\b(und|oder|nicht|der|die|das|mit|zum|zur|ein|eine|einen|wird|wurde|haben|hat|wie|wenn|dann|daher|sodass|sowie|bereits|für|ohne|bei)\b'
+
+  if echo "$comments" | grep -qE "$GERMAN_CHARS" || echo "$comments" | grep -qiE "$GERMAN_WORDS"; then
+    echo "\n✖ Non-English (likely German) found in comments of: $file" >&2
+    echo "  Please write code comments in English." >&2
+    has_issues=1
+  fi
+}
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  detect_in_comments "$f"
+done <<< "$FILES"
+
+if [ "$has_issues" -ne 0 ]; then
+  echo "\nTip: configure your editor spell checker for English (see cspell.json)." >&2
+  exit 1
+fi
+
+exit 0
+

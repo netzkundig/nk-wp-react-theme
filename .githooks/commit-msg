@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# commit-msg hook: enforce English in commit messages
+# Fails if common German characters or stopwords are detected.
+
+MSG_FILE="$1"
+MSG_CONTENT=$(cat "$MSG_FILE")
+
+# Detect German-specific characters
+if echo "$MSG_CONTENT" | grep -qE '[äöüÄÖÜß]'; then
+  echo "\n✖ Commit message appears non-English (contains umlauts/ß)." >&2
+  echo "  Please write commit messages in English." >&2
+  exit 1
+fi
+
+# Detect common German stopwords (rough heuristic)
+GERMAN_WORDS='\b(und|oder|nicht|der|die|das|mit|zum|zur|ein|eine|einen|wird|wurde|haben|hat|wie|wenn|dann|daher|sodass|sowie|bereits|für|ohne|bei)\b'
+if echo "$MSG_CONTENT" | grep -qiE "$GERMAN_WORDS"; then
+  echo "\n✖ Commit message seems to contain German words." >&2
+  echo "  Please use English for commit messages (e.g. regenerate/translate)." >&2
+  exit 1
+fi
+
+exit 0
+

@@ -2,6 +2,12 @@
 
 Minimalist WordPress theme with React integration to render WordPress content on the client side via the REST API.
 
+## Language Policy
+- Use English for all code comments and all commit messages (including AI-generated ones).
+- Git hooks are provided to help enforce this. Enable them with:
+  `git config core.hooksPath .githooks`
+- Editor spell checking is configured for English via `cspell.json`.
+
 ## Features
 - React app is bundled in the theme and mounted in `index.php`.
 - Bootstrap data (site URL, REST URL, frontpage ID, etc.) is passed to `window.nkReactTheme`.
