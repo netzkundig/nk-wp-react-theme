@@ -1,0 +1,41 @@
+# OS / System
+.DS_Store
+Thumbs.db
+
+# Node / Package Manager Logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build Artifacts
+build/
+dist/
+coverage/
+tmp/
+temp/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Environment Files
+.env
+.env.*
+!.env.example
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.history/
+
+# Sass
+.sass-cache/
+
+# Composer (if used)
+vendor/
+
+# WordPress Logs
+debug.log
