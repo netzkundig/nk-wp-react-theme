@@ -17,7 +17,7 @@
     "client-side-rendering",
     "spa"
   ],
-  "author": "",
+  "author": "Eberhard Lauth",
   "license": "ISC",
   "description": "Minimalist WordPress theme integrating React for client-side rendering via the REST API.",
   "devDependencies": {
