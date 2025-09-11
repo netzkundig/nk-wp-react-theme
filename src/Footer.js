@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 
 class Footer extends Component {
     render() {
-        const { darkTheme } = this.props;
+        const { lightTheme } = this.props;
         const footerStyle = {
-            backgroundColor: darkTheme ? '#333' : '#EEE',
-            color: darkTheme ? 'white' : '#333',
-            padding: '20px',
+            backgroundColor: lightTheme ? 'var(--wp--preset--color--base)' : 'var(--wp--preset--color--contrast)',
+            color: lightTheme ? 'var(--wp--preset--color--contrast)' : 'var(--wp--preset--color--base)',
+            padding: 'var(--wp--preset--spacing--30)',
             textAlign: 'center',
         };
         return (

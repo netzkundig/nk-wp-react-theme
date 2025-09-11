@@ -2,11 +2,12 @@ import React, { Component } from 'react';
 
 class Header extends Component {
     render() {
-        const { toggleTheme, darkTheme } = this.props;
+        const { toggleTheme, lightTheme } = this.props;
+        console.log('Header Theme:', lightTheme);
         const headerStyle = {
-            backgroundColor: darkTheme ? '#333' : '#EEE',
-            color: darkTheme ? 'white' : '#333',
-            padding: '10px 20px',
+            background: lightTheme ? 'var(--wp--preset--color--base)': 'var(--wp--preset--color--contrast)',
+            color: lightTheme ? 'var(--wp--preset--color--contrast)': 'var(--wp--preset--color--base)',
+            padding: 'var(--wp--preset--spacing--20) var(--wp--preset--spacing--30)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -14,7 +15,7 @@ class Header extends Component {
         return (
             <header style={headerStyle}>
                 <div>NK React Theme</div>
-                <button onClick={toggleTheme}>{darkTheme ? 'Light Mode' : 'Dark Mode'}</button>
+                <button onClick={toggleTheme}>{lightTheme ? 'Dark Mode' : 'Light Mode'}</button>
             </header>
         );
     }

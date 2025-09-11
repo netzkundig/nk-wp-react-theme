@@ -23,15 +23,19 @@ const Home = () => {
       });
   }, []);
 
-  if (loading) return <div>Lade...</div>;
+  if (loading) return (
+    <div className="nk-spinner-wrapper">
+      <div className="nk-spinner" aria-label="Frontpage wird geladen" />
+    </div>
+  );
   if (error) return <div>{error}</div>;
   if (!frontPageContent) return <div>Keine statische Frontpage definiert.</div>;
 
   return (
-    <div>
-      <h1>{frontPageContent.title.rendered}</h1>
-      <div dangerouslySetInnerHTML={{ __html: frontPageContent.content.rendered }} />
-    </div>
+    <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
+      <h1 className='wp-block-post-title'>{frontPageContent.title.rendered}</h1>
+      <div className='entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained' dangerouslySetInnerHTML={{ __html: frontPageContent.content.rendered }} />
+    </article>
   );
 };
 

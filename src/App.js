@@ -5,23 +5,33 @@ import Footer from './Footer';
 import RouteResolver from './RouteResolver';
 
 export default class App extends Component {
-  state = { darkTheme: true };
-  toggleTheme = () => this.setState(prev => ({ darkTheme: !prev.darkTheme }));
+  state = { lightTheme: true };
+  toggleTheme = () => this.setState(prev => ({ lightTheme: !prev.lightTheme }));
 
   render() {
-    const { darkTheme } = this.state;
+    const { lightTheme } = this.state;
     const { bootstrap } = this.props;
 
     return (
-      <div>
-        <Header darkTheme={darkTheme} toggleTheme={this.toggleTheme} />
-        <main style={{ padding: '20px', background: darkTheme ? '#282c34' : '#f5f5f5', color: darkTheme ? 'white' : 'black' }}>
-          <Routes>
-            <Route path="*" element={<RouteResolver bootstrap={bootstrap} />} />
-          </Routes>
-        </main>
-        <Footer darkTheme={darkTheme} />
-      </div>
+        <>
+          <Header lightTheme={lightTheme} toggleTheme={this.toggleTheme} />
+          <main
+            style={{
+              padding: 'var(--wp--preset--spacing--30)',
+              background: lightTheme
+                ? 'var(--wp--preset--color--base)'
+                : 'var(--wp--preset--color--contrast)',
+              color: lightTheme
+                ? 'var(--wp--preset--color--contrast)'
+                : 'var(--wp--preset--color--base)'
+            }}
+            className='wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
+            <Routes>
+              <Route path="*" element={<RouteResolver bootstrap={bootstrap} />} />
+            </Routes>
+          </main>
+          <Footer lightTheme={lightTheme} />
+        </>
     );
   }
 }

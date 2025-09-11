@@ -7,7 +7,7 @@
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
-    <div id="app"></div>
+    <div id="app" class="wp-site-blocks"></div>
     <?php wp_footer(); ?>
 </body>
 </html>

@@ -31,7 +31,11 @@ const RouteResolver = ({ bootstrap = {} }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  if (loading) return <div>Lade...</div>;
+  if (loading) return (
+    <div className="nk-spinner-wrapper">
+      <div className="nk-spinner" aria-label="Inhalt wird geladen" />
+    </div>
+  );
   if (!route) return <div>Unbekannte Route</div>;
 
   switch (route.type) {

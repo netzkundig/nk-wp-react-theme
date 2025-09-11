@@ -26,16 +26,24 @@ const Page = ({ id }) => {
     }
   }, [data?.content?.rendered]);
 
-  if (loading) return <div>Lade Seite...</div>;
+  if (loading) return (
+    <div className="nk-spinner-wrapper">
+      <div className="nk-spinner" aria-label="Seite wird geladen" />
+    </div>
+  );
   if (err) return <div>{err}</div>;
   if (!data) return null;
 
   document.title = `${data.title?.rendered || 'Seite'} – ${window.nkReactTheme?.siteTitle || ''}`;
 
   return (
-    <article>
-      <h1 dangerouslySetInnerHTML={{ __html: data.title.rendered }} />
-      <div ref={contentRef} dangerouslySetInnerHTML={{ __html: data.content.rendered }} />
+    <article className='wp-block-group alignfull has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
+      <h1 className='wp-block-post-title' dangerouslySetInnerHTML={{ __html: data.title.rendered }} />
+      <div 
+        className='entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained' 
+        ref={contentRef} 
+        dangerouslySetInnerHTML={{ __html: data.content.rendered }} 
+      />
     </article>
   );
 };
