@@ -15,6 +15,30 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - Example components: `App`, `Header`, `Footer`, `Home` (frontpage content via REST).
 - Babel configuration for JSX-Transform (classic) and modern JS.
 
+## Gravity Forms (REST Submit)
+- Client renders WP content (including GF shortcodes/blocks) and intercepts GF form submits in React.
+- Submissions are sent to GF REST v2: `/wp-json/gf/v2/forms/{id}/submissions`.
+- Inline validation and confirmation are rendered in place.
+
+### Setup
+- Enable REST submissions for the form in Gravity Forms (Form Settings → “Submit via REST API”).
+- Ensure the theme sets `window.nkReactTheme.restUrl` (done in `functions.php`).
+- Forms inside REST-rendered content auto-initialize via `initGravityForms`.
+
+### Files
+- `src/utils/initGravityForms.js`: binds submit and posts JSON to GF REST; shows confirmation or field errors.
+- `src/Page.js` / `src/Post.js`: after injecting content, call `initGravityForms` on the content container.
+
+### Validation & UX
+- Highlights invalid fields with `.gfield_error` and per-field messages.
+- Adds a summary box at the top and focuses the first invalid field.
+- Disables submit buttons during request to prevent double submits.
+
+### Notes
+- reCAPTCHA: works if site keys are configured; tokens from hidden inputs are forwarded.
+- File uploads: current JSON submit handler doesn’t support files. Use admin-ajax fallback or extend to multipart if needed.
+- Styles: if GF styles are missing in SPA views, enqueue GF CSS globally or add minimal theme styles for `.gform_wrapper`.
+
 ## Requirements
 - WordPress 6.x (permalinks active)
 - Node.js LTS + npm
@@ -79,6 +103,8 @@ The theme contains a REST resolver (`nk/v1/resolve`). For real client routing (P
 - 401 Unauthorized: Do not use protected endpoints like `/wp/v2/settings` without auth. Use `window.nkReactTheme.frontPageId` or public endpoints like `wp/v2/pages`.
 - `Cannot read properties of undefined (reading 'jsx')`: Make sure that `babel.config.js` exists and `npx wp-scripts build` has run; we use the classic JSX transform.
 - Empty `#app`: Check if `build/index.js` exists and the script is included in `functions.php`.
+- Gravity Forms submit returns 401/403: Enable “Submit via REST API” in the form settings. Confirm requests hit `/wp-json/gf/v2/forms/{id}/submissions`.
+- Validation errors but no messages: Verify input names (e.g., `input_4.3`) in the markup match GF field keys. The handler maps dots to underscores.
 
 ## Next steps
 - Add page/post components that load content via ID (see example in the suggestions).
