@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 
 // Default mapping: Gutenberg block name -> body class to apply
 const DEFAULT_MAPPING = {
-  'core/embed': 'wp-embed-responsive'
+  'core/embed': 'wp-embed-responsive',
+  'gravityforms\/form': 'has-gravityforms-form',
 };
 
 /**

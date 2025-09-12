@@ -1,41 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Home from './Home';
 import Page from './Page';
 import Post from './Post';
 import NotFound from './NotFound';
+import { useResolvePath } from './utils/wpSWR';
 
 const RouteResolver = ({ bootstrap = {} }) => {
   const location = useLocation();
-  const [route, setRoute] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const resolve = async (path) => {
-    const base = (bootstrap.siteUrl || '').replace(/\/$/, '');
-    try {
-      const res = await fetch(`${base}/wp-json/nk/v1/resolve?path=${encodeURIComponent(path)}`, {
-        credentials: 'same-origin',
-      });
-      const data = await res.json();
-      setRoute(data);
-    } catch (e) {
-      setRoute({ type: '404' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    resolve(location.pathname || '/');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  const { data: route, loading, error } = useResolvePath(location.pathname || '/');
 
   if (loading) return (
     <div className="nk-spinner-wrapper">
       <div className="nk-spinner" aria-label="Inhalt wird geladen" />
     </div>
   );
+  if (error) return <div>Fehler bei der Routenauflösung</div>;
   if (!route) return <div>Unbekannte Route</div>;
 
   switch (route.type) {

@@ -13,6 +13,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 /* Layout: Full height and footer at the end */
 html, body {
 	height: 100%;
+	overflow-x: hidden;
 }
 body.nk-react-theme {
 	min-height: 100vh;

@@ -1,5 +1,10 @@
 <?php
-// Minimal functions.php for NK React Theme
+/**
+ * Functions for NK React Theme
+ * @package nk-react
+ * @license GPL-2.0-or-later
+ * @link    https://netzkundig.com/
+ */
 
 // Enqueue React app script and styles, and pass initial data to JS
 add_action('wp_enqueue_scripts', function () {
@@ -64,74 +69,11 @@ function nkreact_body_classes($classes) {
 }
 add_filter('body_class', 'nkreact_body_classes');
 
-add_action('rest_api_init', function () {
-    register_rest_route('nk/v1', '/resolve', array(
-        'methods'             => 'GET',
-        'permission_callback' => '__return_true',
-        'callback'            => function (WP_REST_Request $req) {
-            $path = $req->get_param('path');
-            if ($path === null || $path === '') {
-                $path = '/';
-            }
-            $path = '/' . ltrim($path, '/');
+// Include custom REST API endpoints and fields
+require get_template_directory() . '/functions/rest-api.php';
 
-            if ($path === '/' || $path === '') {
-                if (get_option('show_on_front') === 'page' && ($id = (int) get_option('page_on_front'))) {
-                    return array('type' => 'front-page', 'id' => $id);
-                }
-                return array('type' => 'home');
-            }
+// Include menu registrations
+require get_template_directory() . '/functions/menus.php';
 
-            $url = home_url($path);
-            $id  = url_to_postid($url);
-
-            if ($id) {
-                $post = get_post($id);
-                if ($post) {
-                    $type = $post->post_type === 'page' ? 'page' : ($post->post_type === 'post' ? 'post' : $post->post_type);
-                    return array(
-                        'type' => $type,
-                        'id'   => $id,
-                        'slug' => $post->post_name,
-                    );
-                }
-            }
-            return new WP_REST_Response(array('type' => '404'), 200);
-        }
-    ));
-});
-
-// REST field: expose used block names for all post types supporting block editor (editor + show_in_rest)
-add_action('rest_api_init', function () {
-    $types = get_post_types(['show_in_rest' => true], 'names');
-    if (empty($types)) {
-        return;
-    }
-    foreach ($types as $type) {
-        if (!post_type_supports($type, 'editor')) {
-            continue; // skip types without block editor support
-        }
-        register_rest_field($type, 'blockNames', [
-            'get_callback' => function ($post) {
-                $content = get_post_field('post_content', $post['id']);
-                if (empty($content)) {
-                    return [];
-                }
-                $blocks = parse_blocks($content);
-                if (empty($blocks)) {
-                    return [];
-                }
-                // Flatten only top-level block names; extend if nested traversal needed
-                return array_values(array_filter(array_map(function ($block) {
-                    return isset($block['blockName']) ? $block['blockName'] : null;
-                }, $blocks)));
-            },
-            'schema' => [
-                'description' => 'List of Gutenberg block names used in the post content (top-level).',
-                'type'        => 'array',
-                'items'       => [ 'type' => 'string' ],
-                'context'     => ['view', 'edit'],
-            ],
-        ]);
-    }
-});
+// Include service worker wiring (rewrite + output)
+require get_template_directory() . '/functions/service-worker.php';

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PrimaryMenu from './PrimaryMenu';
 
 class Header extends Component {
     render() {
@@ -15,6 +16,7 @@ class Header extends Component {
         return (
             <header style={headerStyle}>
                 <div>NK React Theme</div>
+                <PrimaryMenu />
                 <button onClick={toggleTheme}>{lightTheme ? 'Dark Mode' : 'Light Mode'}</button>
             </header>
         );
