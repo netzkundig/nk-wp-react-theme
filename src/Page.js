@@ -15,6 +15,7 @@ const Page = ({ id }) => {
     }
   }, [data?.content?.rendered]);
 
+
   if (loading && !data) return (
     <div className="nk-spinner-wrapper">
       <div className="nk-spinner" aria-label="Seite wird geladen" />

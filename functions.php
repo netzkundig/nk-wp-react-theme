@@ -64,7 +64,7 @@ add_action('wp_enqueue_scripts', function () {
 
 // Filter body classes to add 'nk-react-theme'
 function nkreact_body_classes($classes) {
-    $classes = ['nk-react-theme'];
+    $classes = ['nk-react-theme','wp-embed-responsive'];
     return $classes;
 }
 add_filter('body_class', 'nkreact_body_classes');

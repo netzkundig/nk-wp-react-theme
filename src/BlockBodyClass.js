@@ -1,38 +1,28 @@
 import React, { useEffect } from 'react';
 
-// Default mapping: Gutenberg block name -> body class to apply
-const DEFAULT_MAPPING = {
-  'core/embed': 'wp-embed-responsive',
-  'gravityforms\/form': 'has-gravityforms-form',
-};
-
 /**
- * BlockBodyClass
- * Adds body classes based on presence of block names (REST field `blockNames`).
- * - Accepts a list of block names returned by the WP REST API.
- * - Applies mapped classes when a matching block exists.
- * - Cleans up (removes the classes) when dependencies change or component unmounts.
+ * BlockBodyClass (generalized)
+ * Adds a body class for every encountered Gutenberg block name (from REST field `blockNames`).
+ * - Transformation: 'namespace/block' → 'has-block-namespace-block' (slashes → dashes)
+ * - All classes are added on mount/update and removed on cleanup.
  *
  * Props:
- *  - blockNames: string[] (array of block names e.g. ['core/paragraph','core/embed'])
- *  - mapping:   { [blockName: string]: string } (optional override / extension)
+ *  - blockNames: string[] (e.g. ['core/paragraph','core/embed'])
  */
-const BlockBodyClass = ({ blockNames = [], mapping = DEFAULT_MAPPING }) => {
+const BlockBodyClass = ({ blockNames = [] }) => {
   useEffect(() => {
     if (!Array.isArray(blockNames) || blockNames.length === 0) {
       return; // nothing to do
     }
-    const added = [];
-    Object.entries(mapping).forEach(([block, cls]) => {
-      if (blockNames.includes(block) && cls) {
-        document.body.classList.add(cls);
-        added.push(cls);
-      }
-    });
+    // Deduplicate and transform to CSS classes
+    const classes = Array.from(new Set(blockNames))
+      .map((name) => `has-block-${String(name).replace(/\//g, '-')}`);
+
+    classes.forEach((cls) => document.body.classList.add(cls));
     return () => {
-      added.forEach(c => document.body.classList.remove(c));
+      classes.forEach((cls) => document.body.classList.remove(cls));
     };
-  }, [blockNames, mapping]);
+  }, [blockNames]);
 
   return null; // purely side-effect component
 };
