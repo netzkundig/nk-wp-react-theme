@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import RouteResolver from './RouteResolver';
+import RouteResolver from './utils/RouteResolver';
 
 export default class App extends Component {
   state = { lightTheme: true };

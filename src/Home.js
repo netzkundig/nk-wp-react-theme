@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import BlockBodyClass from './BlockBodyClass';
+import BlockBodyClass from './utils/BlockBodyClass';
 import { useWPPage } from './utils/wpSWR';
 
 const Home = ({ ariaBusy }) => {

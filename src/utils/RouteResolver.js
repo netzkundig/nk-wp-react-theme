@@ -1,10 +1,10 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import Home from './Home';
-import Page from './Page';
-import Post from './Post';
-import NotFound from './NotFound';
-import { useResolvePath } from './utils/wpSWR';
+import Home from '../Home';
+import Page from '../Page';
+import Post from '../Post';
+import NotFound from '../NotFound';
+import { useResolvePath } from './wpSWR';
 import { __ } from '@wordpress/i18n';
 
 const RouteResolver = ({ bootstrap = {} }) => {

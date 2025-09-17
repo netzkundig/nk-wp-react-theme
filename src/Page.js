@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
-import BlockBodyClass from './BlockBodyClass';
+import BlockBodyClass from './utils/BlockBodyClass';
 import { initGravityForms } from './utils/initGravityForms';
 import { useWPPage } from './utils/wpSWR';
 

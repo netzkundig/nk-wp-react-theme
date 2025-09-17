@@ -80,6 +80,7 @@ function isAssetRequest(req) {
     return (
       u.href.startsWith(THEME_URL + '/build/') ||
       u.href.startsWith(THEME_URL + '/assets/fonts/') ||
+      u.href.startsWith(THEME_URL + '/assets/svg/') ||
       u.href === THEME_URL + '/build/app.css'
     );
   } catch (_e) { return false; }

@@ -25,6 +25,8 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - Theming: light / dark inversion via CSS custom properties and a state toggle (`lightTheme`).
 - Layout: full-height (`min-height:100vh`) flex column with sticky footer.
 - Babel configuration (classic JSX) + WordPress Scripts toolchain.
+- SVG icons utility: inline and cache SVGs safely via `SvgIcon` (sanitized, default 1rem size).
+- Icon button utility: accessible button with SVG icon via `IconButton` (visible label or `aria-label`).
 
 ## Gravity Forms (REST Submit)
 - Client renders WP content (including GF shortcodes/blocks) and intercepts GF form submits in React.
@@ -89,6 +91,9 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - `src/utils/swrCache.js` – cache helpers (in-memory + localStorage, namespaced by site/auth state).
 - `src/utils/prefetch.js` – hover/viewport prefetch for resolver and concrete target resources.
 - `src/PrimaryMenu.js` – fetches menu items for the `primary` theme location, builds a nested tree, highlights active links, caches in localStorage with server-side version invalidation.
+- `src/utils/SvgIcon.js` – inline SVG utility component with caching and basic sanitization.
+- `src/utils/index.js` – utility exports (e.g., `SvgIcon`).
+ - `src/utils/IconButton.js` – accessible button component with inline SVG icon.
 
 ## Functionality
 Server (WordPress):
@@ -221,6 +226,77 @@ Notes:
 - Prefer WOFF2 and `font-display: swap`.
 - No duplicate `@font-face` in SCSS required.
 - Service Worker caches `/assets/fonts/*` with CacheFirst to improve repeat loads and offline behavior.
+
+## SVG icons (inline via SvgIcon)
+
+Use the `SvgIcon` utility to inline SVGs as React components. This avoids additional `<img>` requests, enables styling via CSS, and keeps accessibility under control.
+
+Files:
+- `src/utils/SvgIcon.js` – loader with in‑memory caching and basic sanitization
+- Optional asset folder: `assets/svg/` (e.g., `assets/svg/logo.svg`)
+
+Usage:
+
+```jsx
+import { SvgIcon } from './src/utils';
+
+// By name (resolved under assetsBase, default: /wp-content/themes/nk-react/assets/svg)
+<SvgIcon name="logo" title="Site logo" />
+
+// By absolute/relative URL
+<SvgIcon src="/wp-content/themes/nk-react/assets/svg/icon-arrow.svg" decorative />
+
+// Override size
+<SvgIcon name="logo" style={{ width: '24px', height: '24px' }} />
+```
+
+Details:
+- Default size is 24px × 24px with `display:inline-block`. Override via `style` or CSS classes.
+- If the root `<svg>` has no `width`/`height`, the utility adds `width="100%" height="100%"` so it scales to the wrapper size.
+- Accessibility:
+  - Use `decorative` for purely visual icons (sets `aria-hidden="true"`).
+  - Provide `title` (maps to `aria-label`) for meaningful icons.
+- Security: the markup is sanitized (removes `<script>` and `on*=` handlers, strips `xmlns:xlink`). Only load trusted SVGs.
+- Performance: responses are cached in‑memory per URL during the session.
+- Service Worker: consider adding `/assets/svg/*` to the CacheFirst list in `functions/service-worker.php` if you use many icons.
+
+Alternative: If you prefer compile‑time React components with props (e.g., color/size), integrate SVGR in your build and import SVGs as components instead of inlining at runtime.
+
+## Icon buttons (IconButton)
+
+Use `IconButton` for accessible buttons that include an inline SVG icon (powered by `SvgIcon`). Provide either a visible text label (children) or an `ariaLabel`.
+
+Files:
+- `src/utils/IconButton.js`
+
+Usage:
+
+```jsx
+import { IconButton } from './src/utils';
+
+// Icon only (needs ariaLabel)
+<IconButton iconName="menu" ariaLabel="Open menu" onClick={toggle} />
+
+// Icon left + text label
+<IconButton iconName="sun" onClick={toggleTheme}>Light Mode</IconButton>
+
+// Icon right + custom size
+<IconButton iconName="arrow-right" iconPosition="right" iconSize="1.25rem">Next</IconButton>
+```
+
+Props (common):
+- `type` ('button'|'submit'|'reset') default 'button'
+- `title` (tooltip), `disabled`, `className`, `style`
+- `ariaLabel` required if no visible children label
+
+Icon props:
+- `iconName` or `iconSrc` (passed to SvgIcon), optional `assetsBase`
+- `iconSize` (default '1rem'), `iconPosition`: 'left' | 'right' | 'only' (default 'left')
+- `decorativeIcon` (default true) hides icon from a11y tree; set false when icon itself conveys meaning
+
+A11y:
+- Visible text OR `ariaLabel` is required. The component warns in dev if neither is provided.
+- Keep `decorativeIcon` true for purely visual icons; otherwise provide a meaningful `ariaLabel`.
 
 ## Internationalization (i18n)
 

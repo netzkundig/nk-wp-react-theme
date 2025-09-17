@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { __ } from '@wordpress/i18n';
 import PrimaryMenu from './PrimaryMenu';
+import { SvgIcon } from './utils';
+import { IconButton } from './utils';
 
 class Header extends Component {
     state = {
@@ -56,7 +58,9 @@ class Header extends Component {
                 <div>{__('NK React Theme', 'nk-react')}</div>
                 <PrimaryMenu />
                 <div className="site-header__buttons">
-                    <button onClick={toggleTheme}>{lightTheme ? __('Dark Mode', 'nk-react') : __('Light Mode', 'nk-react')}</button>
+                    <IconButton iconName={"styles"} title={__('Switch Style', 'nk-react')} ariaLabel={__('Switch Style', 'nk-react')} onClick={toggleTheme}>
+                        {lightTheme ? __('Dark Mode', 'nk-react') : __('Light Mode', 'nk-react')}
+                    </IconButton>
                     <button
                         type="button"
                         className="menu-toggle"
