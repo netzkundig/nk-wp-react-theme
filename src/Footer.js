@@ -6,11 +6,13 @@ class Footer extends Component {
         const footerStyle = {
             backgroundColor: lightTheme ? 'var(--wp--preset--color--base)' : 'var(--wp--preset--color--contrast)',
             color: lightTheme ? 'var(--wp--preset--color--contrast)' : 'var(--wp--preset--color--base)',
-            padding: 'var(--wp--preset--spacing--30)',
+            paddingTop: 'var(--wp--preset--spacing--30)',
+            paddingBottom: 'var(--wp--preset--spacing--30)',
+            marginTop: 'unset',
             textAlign: 'center',
         };
         return (
-            <footer style={footerStyle}>
+            <footer style={footerStyle} className='has-global-padding'>
                 © {new Date().getFullYear()} NK React Theme
             </footer>
         );

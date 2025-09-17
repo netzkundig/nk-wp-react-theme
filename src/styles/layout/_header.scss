@@ -1,1 +1,23 @@
-// header styles placeholder
+// Header layout and menu toggle behavior
+@use '../abstracts/breakpoints' as bp;
+
+.site-header {
+    &__buttons {
+        display: flex;
+        gap: var(--wp--style--block-gap, 1rem);
+        z-index: 2;
+    }
+
+    // Hide the menu toggle on small screens; show on md and up
+    .menu-toggle { display: none; }
+    @include bp.breakpoint(md, max) {
+        .menu-toggle { display: inline-flex; align-items: center; }
+    }
+
+    // Collapse the primary nav only for md and up when toggled
+    @include bp.breakpoint(md, max) {
+        &.is-menu-collapsed {
+            .primary-menu__nav { display: none; }
+        }
+    }
+}

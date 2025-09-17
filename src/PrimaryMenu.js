@@ -155,17 +155,19 @@ const PrimaryMenu = () => {
   const busy = loading || revalidating;
 
   return (
-    <nav aria-label="Primary" aria-busy={busy ? 'true' : undefined}>
+    <div className="primary-menu__container">
+    <nav className="primary-menu__nav" aria-label="Primary" aria-busy={busy ? 'true' : undefined}>
       {error ? (
         <div className="menu-error">{error}</div>
       ) : (
-        <ul className="primary-menu" style={{ display: 'flex', listStyle: 'none', padding: 0, margin: 0, gap: 'var(--wp--preset--spacing--30, 1rem)' }}>
+        <ul id="primary-menu" className="primary-menu">
           {tree.map(node => (
             <NavItem key={node.id} node={node} pathname={routerLocation.pathname} siteUrl={siteUrl} />
           ))}
         </ul>
       )}
     </nav>
+    </div>
   );
 };
 

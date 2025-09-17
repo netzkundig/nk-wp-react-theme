@@ -1,1 +1,45 @@
-// primary menu placeholder
+/**
+ * Menu styles
+ */
+
+@use '../abstracts/breakpoints' as bp;
+
+// Primary menu styles
+
+
+.primary-menu {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: var(--wp--preset--spacing--30, 1rem);
+    .is-menu-expanded & {
+        flex-direction: column;
+        align-items: center;
+        &__container {
+            // Overlay Menu for mobile
+            @include bp.breakpoint(md, max) {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 100vh;
+                width: 100vw;
+                overflow-y: auto;
+                background: var(--wp--preset--color--base);
+                .theme-dark & {
+                    background: var(--wp--preset--color--contrast);
+                    color: var(--wp--preset--color--base);
+                }
+                z-index: 1;
+                > nav {
+                    padding-right: var(--wp--style--root--padding-right);
+                    padding-left: var(--wp--style--root--padding-left);
+                    padding-top: 4em; // space for header
+                    padding-bottom: var(--wp--style--root--padding-bottom);
+                }
+            }
+        }
+    }
+}

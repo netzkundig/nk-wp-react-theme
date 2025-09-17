@@ -17,7 +17,7 @@ export default class App extends Component {
           <Header lightTheme={lightTheme} toggleTheme={this.toggleTheme} />
           <main
             style={{
-              padding: 'var(--wp--preset--spacing--30)',
+              marginTop: 'unset',
               background: lightTheme
                 ? 'var(--wp--preset--color--base)'
                 : 'var(--wp--preset--color--contrast)',

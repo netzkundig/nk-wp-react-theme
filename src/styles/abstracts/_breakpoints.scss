@@ -1,4 +1,5 @@
 // Breakpoint map and mixin
+@use 'sass:map';
 $breakpoints: (
   xs: 480px,
   sm: 640px,
@@ -7,11 +8,21 @@ $breakpoints: (
   xl: 1280px
 );
 
-@mixin breakpoint($bp) {
-  $size: map-get($breakpoints, $bp);
-  @if $size {
-    @media (min-width: $size) { @content; }
-  } @else {
+// Usage:
+//   @include breakpoint(md) { ... }            // min-width (default)
+//   @include breakpoint(md, max) { ... }       // max-width (<= bp - 0.02px)
+//   @include breakpoint(md, 'min') { ... }     // explicit min-width
+@mixin breakpoint($bp, $type: min) {
+  $size: map.get($breakpoints, $bp);
+  @if not $size {
     @warn 'Unknown breakpoint: #{$bp}';
+  } @else if $type == min or $type == 'min' {
+    @media (min-width: $size) { @content; }
+  } @else if $type == max or $type == 'max' {
+    $max: $size - 0.02px; // avoid overlap at exact boundary
+    @media (max-width: $max) { @content; }
+  } @else {
+    @warn 'Unknown breakpoint type: #{$type}. Expected min|max.';
+    @media (min-width: $size) { @content; }
   }
 }
