@@ -28,10 +28,25 @@ if ('serviceWorker' in navigator) {
   // Avoid in some dev contexts (e.g., localhost) unless desired
   const isLocalhost = /^(localhost|127\.|\[::1\])/.test(location.hostname);
   if (!isLocalhost) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        // ignore registration failures silently
-      });
+    window.addEventListener('load', async () => {
+      const tryRegister = async (url) => navigator.serviceWorker.register(url);
+      // Probe with a HEAD request to avoid registering a URL that would redirect (Safari disallows)
+      const probe = async () => {
+        try {
+          const res = await fetch('/sw.js', { method: 'HEAD', cache: 'no-store', redirect: 'manual' });
+          if (res.status === 200) return '/sw.js';
+          // If redirect indicated or not 200, use query-var endpoint which we ensured doesn’t redirect
+          return '/?service_worker=1';
+        } catch (_) {
+          return '/?service_worker=1';
+        }
+      };
+      const url = await probe();
+      try {
+        await tryRegister(url);
+      } catch (_) {
+        // final no-op
+      }
     });
   }
 }

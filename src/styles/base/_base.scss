@@ -1,0 +1,6 @@
+// Root layout previously in style.css
+html, body { height: 100%; overflow-x: hidden; }
+body.nk-react-theme { min-height: 100vh; display: flex; flex-direction: column; }
+#app, #app > div { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 100%; }
+main { flex: 1 1 auto; width: 100%; }
+footer { margin-top: auto; }

@@ -5,31 +5,38 @@ import Page from './Page';
 import Post from './Post';
 import NotFound from './NotFound';
 import { useResolvePath } from './utils/wpSWR';
+import { __ } from '@wordpress/i18n';
 
 const RouteResolver = ({ bootstrap = {} }) => {
   const location = useLocation();
-  const { data: route, loading, error } = useResolvePath(location.pathname || '/');
+  const { data: route, loading, revalidating, error } = useResolvePath(location.pathname || '/');
 
-  if (loading) return (
+  if (loading && !route) return (
     <div className="nk-spinner-wrapper">
-      <div className="nk-spinner" aria-label="Inhalt wird geladen" />
+      <div className="nk-spinner" aria-label={__('Content is loading', 'nk-react')} />
     </div>
   );
-  if (error) return <div>Fehler bei der Routenauflösung</div>;
-  if (!route) return <div>Unbekannte Route</div>;
+  // SWR-conform: If we have a cached route, render it even if error occurred during revalidation
+  if (error && !route) return <div>{__('Error during route resolution', 'nk-react')}</div>;
+  if (!route) return <div>{__('Unknown route', 'nk-react')}</div>;
 
-  switch (route.type) {
-    case 'front-page':
-      return <Page id={route.id} />;
-    case 'home':
-      return <Home />;
-    case 'page':
-      return <Page id={route.id} />;
-    case 'post':
-      return <Post id={route.id} />;
-    default:
-      return <NotFound />;
-  }
+  const content = (() => {
+    switch (route.type) {
+      case 'front-page':
+        return <Page id={route.id} ariaBusy={revalidating} />;
+      case 'home':
+        return <Home ariaBusy={revalidating} />;
+      case 'page':
+        return <Page id={route.id} ariaBusy={revalidating} />;
+      case 'post':
+        return <Post id={route.id} ariaBusy={revalidating} />;
+      default:
+        return <NotFound ariaBusy={revalidating} />;
+    }
+  })();
+
+  // Return content directly to preserve Gutenberg alignfull/alignwide behavior
+  return content;
 };
 
 export default RouteResolver;

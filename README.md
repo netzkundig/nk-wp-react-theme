@@ -16,8 +16,10 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - Components: `App`, `Header`, `Footer`, `Home`, `RouteResolver`, `Page`, `Post`, `NotFound`.
 - Primary navigation via REST: `PrimaryMenu` component + endpoints `nk/v1/menu/<location>` and `nk/v1/menu-version/<location>` with localStorage caching & version invalidation.
 - Content caching with Stale‑While‑Revalidate (SWR): pages, posts and route resolution render instantly from cache (if visited before) and revalidate silently in the background.
+ - Content caching with Stale‑While‑Revalidate (SWR): pages, posts and route resolution render instantly from cache (if visited before) and revalidate silently in the background. During route revalidation, the RouteResolver wraps content in a container with `aria-busy` so assistive tech is informed without causing UI flicker.
 - Route prefetching: on hover/focus and when links enter the viewport, resolver and target resources (page/post) are prefetched to make navigation feel instant.
 - Service Worker: offline support and runtime caching (CacheFirst for theme assets, SWR for REST GET) served from `/sw.js`.
+ - Service Worker: offline support and runtime caching (CacheFirst for theme assets incl. `build/index.js`, `build/app.css` and `/assets/fonts/*`, SWR for REST GET) served from `/sw.js`.
 - Accessible CSS-only loading spinner (`.nk-spinner`) reused across all async states.
 - Gravity Forms dynamic initialization after REST content injection.
 - Theming: light / dark inversion via CSS custom properties and a state toggle (`lightTheme`).
@@ -78,6 +80,7 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - `src/index.js` – mounts `<App />` with router (if installed) / fallback.
 - `src/App.js` – global layout, theme state (`lightTheme`), routes placeholder.
 - `src/RouteResolver.js` – resolves current `location.pathname` via REST -> chooses component.
+ - `src/RouteResolver.js` – resolves current `location.pathname` via REST -> chooses component; indicates background revalidation with `aria-busy`.
 - `src/Home.js` – front page fetch via `frontPageId` bootstrap + SWR; shows spinner only on first load.
 - `src/Page.js` / `src/Post.js` – fetch entity by ID, inject content, init Gravity Forms.
 - `src/NotFound.js` – 404 boundary.
@@ -113,11 +116,12 @@ Client (React):
 - Cache keys are namespaced by site URL and auth state, data lives in memory and `localStorage`.
 - Version detection uses `modified_gmt` (fallback to `id:date_gmt`).
 - UI stays visible during background revalidation; initial loads show the spinner only when no cache exists.
+ - Fetches use `AbortController` and ignore abort errors to avoid transient error flashes (notably in Firefox) when navigations cancel in‑flight requests.
 
 ### Service Worker (offline + caching)
 - Served from `/sw.js` with root scope, implemented in PHP: `functions/service-worker.php`.
 - Strategies:
-  - CacheFirst for theme assets (`build/index.js`, `style.css`).
+  - CacheFirst for theme assets (`build/index.js`, `build/app.css`) and fonts under `/assets/fonts/*`.
   - Stale-While-Revalidate for REST `GET /wp-json/*`.
 - On theme activation, rewrite rules are flushed automatically so `/sw.js` works immediately.
 
@@ -148,6 +152,130 @@ Client (React):
   npx wp-scripts build
   ```
 
+## SCSS & Build
+
+The theme ships SCSS organized under `src/styles/` (7-1 inspired). The entry point is `src/styles/app.scss`. We compile to `build/app.css`, which is enqueued by the theme. The file `style.css` contains only the theme header.
+
+Key folders:
+- `abstracts/` variables, mixins, functions, breakpoints (`@mixin breakpoint($bp)`)
+- `base/` base layout, typography, WordPress core helpers (alignfull/alignwide)
+- `layout/`, `components/`, `blocks/`, `pages/`, `plugins/`, `themes/`
+
+Try it:
+
+```bash
+# Development CSS (no source map, fast)
+npm run css:dev
+
+# Production CSS (minified)
+npm run css:prod
+
+# Full dev workflow (JS watch + CSS watch in parallel)
+npm run dev
+
+# Full production build (JS build + CSS minified)
+npm run prod
+```
+
+Notes:
+- Uses Dart Sass with `@use` instead of deprecated `@import`.
+- App CSS is served from `build/app.css` (see `functions.php`).
+
+## Fonts via theme.json
+
+Fonts are loaded declaratively through `theme.json`, not via SCSS. Place font files under `assets/fonts/<family>/...` and reference them with `file:` URLs. WordPress will generate the `@font-face` rules for both frontend and editor.
+
+Example `theme.json` snippet:
+
+```json
+{
+  "settings": {
+    "typography": {
+      "fontFamilies": [
+        {
+          "slug": "inter",
+          "name": "Inter",
+          "fontFace": [
+            {
+              "fontFamily": "Inter",
+              "fontStyle": "normal",
+              "fontWeight": "100 900",
+              "fontDisplay": "swap",
+              "src": ["file:./assets/fonts/inter/Inter-VariableFont_slnt,wght.woff2"]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+Usage in CSS/SCSS:
+
+```css
+body { font-family: var(--wp--preset--font-family--inter), system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+```
+
+Notes:
+- Prefer WOFF2 and `font-display: swap`.
+- No duplicate `@font-face` in SCSS required.
+- Service Worker caches `/assets/fonts/*` with CacheFirst to improve repeat loads and offline behavior.
+
+## Internationalization (i18n)
+
+This theme is prepared for translations in PHP and JavaScript.
+
+- PHP: `load_theme_textdomain('nk-react', get_template_directory() . '/languages')` is called on `after_setup_theme`.
+- JS: The bundle depends on `wp-i18n` and registers translations with `wp_set_script_translations('nk-react-app', 'nk-react', get_template_directory() . '/languages')`.
+- Strings in React components are wrapped with `__('…', 'nk-react')` from `@wordpress/i18n`.
+
+### Generate POT (source of truth)
+Use WP-CLI i18n tools (requires `wp-cli` and the i18n package installed):
+
+```bash
+# From the theme folder
+wp i18n make-pot . languages/nk-react.pot \
+  --domain=nk-react \
+  --exclude=node_modules,build,vendor
+```
+
+### Create/Update PO/MO for a locale
+- Open `languages/nk-react.pot` in Poedit (or similar).
+- Save as `languages/nk-react-<locale>.po` (e.g. `nk-react-de_DE.po`).
+- Poedit will compile the corresponding `.mo` automatically.
+
+### Generate JSON for JS translations
+WordPress loads JS translations from JSON files alongside the script handle and domain.
+
+```bash
+# Convert PO to JSON files for JS (keeps existing JSON files)
+wp i18n make-json languages --no-purge
+```
+
+Notes:
+- JSON files will be created per locale (e.g. `languages/nk-react-de_DE-<hash>.json`).
+- Ensure the text domain matches exactly: `nk-react`.
+- The theme header contains `Text Domain: nk-react` and `Domain Path: /languages`.
+
+### Try it: i18n scripts
+
+Prerequisites:
+- wp-cli with i18n commands available (wp i18n ...), WordPress site context.
+
+Run from the theme folder:
+
+```bash
+# Generate POT
+npm run i18n:pot
+
+# Generate JSON from existing PO/MO
+npm run i18n:json
+
+# Do both
+npm run i18n:all
+```
+
 ## Try it
 
 1) Build and activate
@@ -162,6 +290,7 @@ Client (React):
 2) Verify SWR cache (no flicker on revisit)
 - Navigate to a page or post: you should see the spinner only on the very first view.
 - Navigate away and back: content should appear instantly with no spinner; background revalidation runs silently.
+ - Assistive tech: while revalidating a resolved route, the wrapper sets `aria-busy` to signal loading state without altering layout.
 
 3) Verify Prefetch (hover/viewport)
 - Open DevTools → Network (disable cache in devtools if you want to observe requests clearly).
@@ -169,6 +298,8 @@ Client (React):
   - `/wp-json/nk/v1/resolve?path=…` (resolver)
   - `/wp-json/wp/v2/pages/:id` or `/wp-json/wp/v2/posts/:id` (target resource)
 - Click the link: navigation should be near-instant since data is already prefetched.
+
+Tip: Prefetch respects Data Saver and won’t run if the browser signals reduced data usage.
 
 4) Verify Service Worker (offline/runtime cache)
 - Important: Service Workers require secure origins. Our code does NOT register the SW on `localhost`. To test:
@@ -180,6 +311,7 @@ Client (React):
   - Theme assets should load (precache, CacheFirst).
   - Previously visited pages should render from the runtime REST cache.
   - Unvisited pages will return a 503 (expected when offline).
+ - Note: The SW only caches GET requests; admin/auth routes are bypassed.
 
 5) Reset caches (if needed)
 - DevTools → Application → Storage → Clear site data, and “Unregister” under Service Workers.
@@ -218,6 +350,19 @@ Extending resolver:
 | GF form not submitting | REST setting off / wrong form ID | Enable REST submit & check network request |
 | Footer not sticking | Body class missing | Ensure `body_class` outputs `nk-react-theme` |
 | Flash of wrong theme colors | No initial CSS variables | Add base color variables to `:root` / body |
+
+### Service Worker (Safari / NGINX)
+- Symptoms (Safari): Console shows
+  - `Not allowed to follow a redirection while loading /sw.js`
+  - or `Failed to load resource: 404 (Not Found)` for `/sw.js`.
+- Cause: Safari disallows redirected Service Worker scripts. Some servers (e.g., strict NGINX/Valet configs) may redirect `/sw.js` or not route rewrites yet.
+- Theme behavior:
+  - Registration probes `/sw.js` with `HEAD` (no redirect). If not 200, it falls back to `/?service_worker=1` (same worker, no redirect).
+  - The server disables canonical redirects for `/sw.js` and `?service_worker=1` and sets `Service-Worker-Allowed: /` for root scope.
+- What to do if still affected:
+  - Reactivate the theme (flushes rewrite rules) or re-save permalinks.
+  - Ensure your web server doesn’t serve a static `sw.js` or enforce a redirect before WordPress rewrites.
+  - DevTools → Application → Service Workers: Unregister → Storage: Clear site data → Hard reload.
 
 ## Loading UX
 - Unified spinner: `.nk-spinner-wrapper` centers; `.nk-spinner` uses dual ring animation.

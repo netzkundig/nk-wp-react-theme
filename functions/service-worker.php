@@ -14,6 +14,21 @@ function nkreact_sw_query_var($vars) {
 }
 add_filter('query_vars', 'nkreact_sw_query_var');
 
+// Prevent canonical redirects for the service worker endpoint and /sw.js
+function nkreact_disable_canonical_for_sw($redirect_url, $requested_url) {
+  // If explicitly requesting our service worker via query var, block redirect
+  if (!empty($_GET['service_worker'])) {
+    return false;
+  }
+  // If path is /sw.js, also block redirect (Safari disallows redirects for SW scripts)
+  $path = wp_parse_url($requested_url, PHP_URL_PATH);
+  if ($path === '/sw.js' || $path === 'sw.js') {
+    return false;
+  }
+  return $redirect_url;
+}
+add_filter('redirect_canonical', 'nkreact_disable_canonical_for_sw', 10, 2);
+
 function nkreact_output_service_worker() {
     if (!get_query_var('service_worker')) {
         return;
@@ -22,8 +37,10 @@ function nkreact_output_service_worker() {
     $theme = get_template_directory_uri();
     $ver   = '1.0.0';
 
-    nocache_headers();
-    header('Content-Type: application/javascript; charset=UTF-8');
+  nocache_headers();
+  header('Content-Type: application/javascript; charset=UTF-8');
+  // Allow root scope even when registered via alternative URL like '/?service_worker=1'
+  header('Service-Worker-Allowed: /');
     echo "\n";
     ?>
 // NK React Theme Service Worker
@@ -38,7 +55,7 @@ const RUNTIME = 'nk-runtime-' + SW_VERSION;
 
 const PRECACHE_URLS = [
   THEME_URL + '/build/index.js',
-  THEME_URL + '/style.css'
+  THEME_URL + '/build/app.css'
 ];
 
 self.addEventListener('install', (event) => {
@@ -60,7 +77,11 @@ self.addEventListener('activate', (event) => {
 function isAssetRequest(req) {
   try {
     const u = new URL(req.url);
-    return u.href.startsWith(THEME_URL + '/build/') || u.href === THEME_URL + '/style.css';
+    return (
+      u.href.startsWith(THEME_URL + '/build/') ||
+      u.href.startsWith(THEME_URL + '/assets/fonts/') ||
+      u.href === THEME_URL + '/build/app.css'
+    );
   } catch (_e) { return false; }
 }
 

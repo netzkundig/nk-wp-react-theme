@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { __ } from '@wordpress/i18n';
 import PrimaryMenu from './PrimaryMenu';
 
 class Header extends Component {
@@ -15,9 +16,9 @@ class Header extends Component {
         };
         return (
             <header style={headerStyle}>
-                <div>NK React Theme</div>
+                <div>{__('NK React Theme', 'nk-react')}</div>
                 <PrimaryMenu />
-                <button onClick={toggleTheme}>{lightTheme ? 'Dark Mode' : 'Light Mode'}</button>
+                <button onClick={toggleTheme}>{lightTheme ? __('Dark Mode', 'nk-react') : __('Light Mode', 'nk-react')}</button>
             </header>
         );
     }

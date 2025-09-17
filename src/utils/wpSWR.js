@@ -14,6 +14,7 @@ export function useSWRResource(key, { ttlMs = 24 * 60 * 60 * 1000, fetcher, vers
 
   useEffect(() => {
     let active = true;
+    const ctrl = new AbortController();
     const run = async () => {
       // compare version if available
       const cachedVersion = initial?.version || null;
@@ -24,7 +25,7 @@ export function useSWRResource(key, { ttlMs = 24 * 60 * 60 * 1000, fetcher, vers
       if (hadCache) setRevalidating(true); else setLoading(true);
 
       try {
-        const fresh = await fetcher();
+        const fresh = await fetcher({ signal: ctrl.signal });
         if (!active) return;
         const freshVersion = versionOf ? versionOf(fresh) : null;
         // Only update if data is new/different or no cache
@@ -34,6 +35,8 @@ export function useSWRResource(key, { ttlMs = 24 * 60 * 60 * 1000, fetcher, vers
         }
         writeCache(key, { data: fresh, version: freshVersion, ts: nowTs() });
       } catch (e) {
+        // Ignore abort errors
+        if (!active || (e && (e.name === 'AbortError' || String(e).includes('AbortError')))) return;
         if (active) setError('Konnte Daten nicht laden');
       } finally {
         if (!active) return;
@@ -43,7 +46,7 @@ export function useSWRResource(key, { ttlMs = 24 * 60 * 60 * 1000, fetcher, vers
 
     // Revalidate always when key changes; if we had cache and not expired, UI won't flicker
     run();
-    return () => { active = false; };
+    return () => { active = false; try { ctrl.abort(); } catch (_) {} };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
@@ -69,9 +72,9 @@ export function useWPPage(id, { ttlMs = 24 * 60 * 60 * 1000 } = {}) {
   const key = `wp:page:${id}`;
   return useSWRResource(key, {
     ttlMs,
-    fetcher: async () => {
+    fetcher: async ({ signal } = {}) => {
       const base = siteBase();
-      return jsonOrThrow(await fetch(`${base}/wp-json/wp/v2/pages/${id}`, { credentials: 'same-origin' }));
+      return jsonOrThrow(await fetch(`${base}/wp-json/wp/v2/pages/${id}`, { credentials: 'same-origin', signal }));
     },
     versionOf: versionFromEntity,
   });
@@ -81,9 +84,9 @@ export function useWPPost(id, { ttlMs = 24 * 60 * 60 * 1000 } = {}) {
   const key = `wp:post:${id}`;
   return useSWRResource(key, {
     ttlMs,
-    fetcher: async () => {
+    fetcher: async ({ signal } = {}) => {
       const base = siteBase();
-      return jsonOrThrow(await fetch(`${base}/wp-json/wp/v2/posts/${id}`, { credentials: 'same-origin' }));
+      return jsonOrThrow(await fetch(`${base}/wp-json/wp/v2/posts/${id}`, { credentials: 'same-origin', signal }));
     },
     versionOf: versionFromEntity,
   });
@@ -93,9 +96,9 @@ export function useResolvePath(path, { ttlMs = 10 * 60 * 1000 } = {}) {
   const key = `wp:resolve:${path}`;
   return useSWRResource(key, {
     ttlMs,
-    fetcher: async () => {
+    fetcher: async ({ signal } = {}) => {
       const base = siteBase();
-      return jsonOrThrow(await fetch(`${base}/wp-json/nk/v1/resolve?path=${encodeURIComponent(path)}`, { credentials: 'same-origin' }));
+      return jsonOrThrow(await fetch(`${base}/wp-json/nk/v1/resolve?path=${encodeURIComponent(path)}`, { credentials: 'same-origin', signal }));
     },
     versionOf: (r) => `${r?.type || ''}:${r?.id || ''}`, // changes when mapping changes
   });

@@ -1,0 +1,207 @@
+# Copyright (C) 2025 netzkundig
+# This file is distributed under the GNU General Public License v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: NK React Theme 1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/theme/nk-react\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-09-17T08:50:40+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: nk-react\n"
+
+#. Theme Name of the theme
+#: style.css
+#: src/Header.js:19
+msgid "NK React Theme"
+msgstr ""
+
+#. Theme URI of the theme
+#. Author URI of the theme
+#: style.css
+msgid "https://netzkundig.com/"
+msgstr ""
+
+#. Description of the theme
+#: style.css
+msgid "Minimalist WordPress theme integrating React for client-side rendering via the REST API."
+msgstr ""
+
+#. Author of the theme
+#: style.css
+msgid "netzkundig"
+msgstr ""
+
+#: functions/menus.php:12
+msgid "Primary Menu"
+msgstr ""
+
+#: functions/menus.php:13
+msgid "Footer Menu"
+msgstr ""
+
+#: src/Header.js:21
+msgid "Dark Mode"
+msgstr ""
+
+#: src/Header.js:21
+msgid "Light Mode"
+msgstr ""
+
+#: src/Home.js:13
+msgid "Front page is loading"
+msgstr ""
+
+#: src/Home.js:16
+msgid "No static front page defined."
+msgstr ""
+
+#: src/Home.js:17
+msgid "Error while loading the front page"
+msgstr ""
+
+#: src/NotFound.js:6
+msgid "Page not found."
+msgstr ""
+
+#: src/Page.js:22
+msgid "Page is loading"
+msgstr ""
+
+#: src/Page.js:25
+msgid "Error while loading the page"
+msgstr ""
+
+#: src/Post.js:21
+msgid "Post is loading"
+msgstr ""
+
+#: src/Post.js:24
+msgid "Error while loading the post"
+msgstr ""
+
+#: src/RouteResolver.js:16
+msgid "Content is loading"
+msgstr ""
+
+#: src/RouteResolver.js:20
+msgid "Error during route resolution"
+msgstr ""
+
+#: src/RouteResolver.js:21
+msgid "Unknown route"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Base"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Contrast"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 1"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 2"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 3"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 4"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 5"
+msgstr ""
+
+#: theme.json
+msgctxt "Color name"
+msgid "Accent 6"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "Tiny"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "X-Small"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "Small"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "Regular"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "X-Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Space size name"
+msgid "XX-Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Small"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Medium"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Extra Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Font size name"
+msgid "Extra Extra Large"
+msgstr ""
+
+#: theme.json
+msgctxt "Font family name"
+msgid "Manrope"
+msgstr ""
+
+#: theme.json
+msgctxt "Font family name"
+msgid "Fira Code"
+msgstr ""
