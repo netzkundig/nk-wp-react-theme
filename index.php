@@ -1,3 +1,12 @@
+<?php
+/**
+ * Main template file for NK React Theme
+ * 
+ * @package nk-react
+ * @license GPL-2.0-or-later
+ * @link    https://netzkundig.com/
+ */
+?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>

@@ -1,6 +1,7 @@
 <?php
 /**
  * Register Menus for NK React Theme
+ * 
  * @package nk-react
  * @license GPL-2.0-or-later
  * @link    https://netzkundig.com/

@@ -50,7 +50,7 @@ export default function IconButton({
 
   const iconEl = (
     <span className="nk-icon-button__icon" style={{ width: iconSize, height: iconSize }} aria-hidden={decorativeIcon ? 'true' : undefined}>
-      <SvgIcon name={iconName} src={iconSrc} assetsBase={assetsBase} decorative={decorativeIcon} />
+      <SvgIcon iconName={iconName} src={iconSrc} assetsBase={assetsBase} decorative={decorativeIcon} />
     </span>
   );
 

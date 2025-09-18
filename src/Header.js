@@ -61,15 +61,10 @@ class Header extends Component {
                     <IconButton iconName={"styles"} title={__('Switch Style', 'nk-react')} ariaLabel={__('Switch Style', 'nk-react')} onClick={toggleTheme}>
                         {lightTheme ? __('Dark Mode', 'nk-react') : __('Light Mode', 'nk-react')}
                     </IconButton>
-                    <button
-                        type="button"
-                        className="menu-toggle"
-                        aria-controls="primary-menu"
-                        aria-expanded={menuCollapsed ? 'false' : 'true'}
-                        onClick={this.toggleMenu}
-                    >
+                    <IconButton iconName={"menu"} title={__('Toggle Menu', 'nk-react')} className="menu-toggle" ariaLabel={__('Menu', 'nk-react')} aria-controls="primary-menu" aria-expanded={menuCollapsed ? 'false' : 'true'} onClick={this.toggleMenu}>
                         {__('Menu', 'nk-react')}
-                    </button>
+                    </IconButton>
+                    <SvgIcon iconName={"styles"} />
                 </div>
             </header>
         );

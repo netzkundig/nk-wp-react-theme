@@ -1,6 +1,10 @@
 <?php
 /**
  * Service Worker output for NK React Theme
+ * 
+ * @package nk-react
+ * @license GPL-2.0-or-later
+ * @link    https://netzkundig.com/
  */
 
 function nkreact_register_sw_rewrite() {

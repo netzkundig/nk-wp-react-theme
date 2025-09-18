@@ -15,17 +15,15 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - Client routing layer (suggested) via `RouteResolver` component (works without server rewrites because WP serves every request with the theme index template).
 - Components: `App`, `Header`, `Footer`, `Home`, `RouteResolver`, `Page`, `Post`, `NotFound`.
 - Primary navigation via REST: `PrimaryMenu` component + endpoints `nk/v1/menu/<location>` and `nk/v1/menu-version/<location>` with localStorage caching & version invalidation.
-- Content caching with Stale‑While‑Revalidate (SWR): pages, posts and route resolution render instantly from cache (if visited before) and revalidate silently in the background.
- - Content caching with Stale‑While‑Revalidate (SWR): pages, posts and route resolution render instantly from cache (if visited before) and revalidate silently in the background. During route revalidation, the RouteResolver wraps content in a container with `aria-busy` so assistive tech is informed without causing UI flicker.
+- Content caching with Stale‑While‑Revalidate (SWR): pages, posts and route resolution render instantly from cache (if visited before) and revalidate silently in the background. During route revalidation, the UI indicates loading via `aria-busy` without flicker.
 - Route prefetching: on hover/focus and when links enter the viewport, resolver and target resources (page/post) are prefetched to make navigation feel instant.
-- Service Worker: offline support and runtime caching (CacheFirst for theme assets, SWR for REST GET) served from `/sw.js`.
- - Service Worker: offline support and runtime caching (CacheFirst for theme assets incl. `build/index.js`, `build/app.css` and `/assets/fonts/*`, SWR for REST GET) served from `/sw.js`.
+- Service Worker: offline support and runtime caching (CacheFirst for theme assets incl. `build/index.js`, `build/app.css`, `/assets/fonts/*` and `/assets/svg/*`, SWR for REST GET) served from `/sw.js`.
 - Accessible CSS-only loading spinner (`.nk-spinner`) reused across all async states.
 - Gravity Forms dynamic initialization after REST content injection.
 - Theming: light / dark inversion via CSS custom properties and a state toggle (`lightTheme`).
 - Layout: full-height (`min-height:100vh`) flex column with sticky footer.
 - Babel configuration (classic JSX) + WordPress Scripts toolchain.
-- SVG icons utility: inline and cache SVGs safely via `SvgIcon` (sanitized, default 1rem size).
+- SVG icons utility: inline and cache SVGs safely via `SvgIcon` (sanitized, default 24px size).
 - Icon button utility: accessible button with SVG icon via `IconButton` (visible label or `aria-label`).
 
 ## Gravity Forms (REST Submit)
@@ -78,11 +76,10 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - `functions.php` – enqueues built script & style, injects bootstrap JSON, registers `nk/v1/resolve`.
 - `functions/service-worker.php` – provides `/sw.js` via rewrite + outputs SW; flushes rewrite rules on theme activation.
 - `babel.config.js` – classic JSX + env.
-- `style.css` – theme header + layout (flex, sticky footer) + spinner styles.
+- `style.css` – theme header only (WP theme metadata); styles are compiled to `build/app.css`.
 - `src/index.js` – mounts `<App />` with router (if installed) / fallback.
 - `src/App.js` – global layout, theme state (`lightTheme`), routes placeholder.
-- `src/RouteResolver.js` – resolves current `location.pathname` via REST -> chooses component.
- - `src/RouteResolver.js` – resolves current `location.pathname` via REST -> chooses component; indicates background revalidation with `aria-busy`.
+- `src/RouteResolver.js` – resolves current `location.pathname` via REST -> chooses component; indicates background revalidation with `aria-busy`.
 - `src/Home.js` – front page fetch via `frontPageId` bootstrap + SWR; shows spinner only on first load.
 - `src/Page.js` / `src/Post.js` – fetch entity by ID, inject content, init Gravity Forms.
 - `src/NotFound.js` – 404 boundary.
@@ -93,7 +90,7 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - `src/PrimaryMenu.js` – fetches menu items for the `primary` theme location, builds a nested tree, highlights active links, caches in localStorage with server-side version invalidation.
 - `src/utils/SvgIcon.js` – inline SVG utility component with caching and basic sanitization.
 - `src/utils/index.js` – utility exports (e.g., `SvgIcon`).
- - `src/utils/IconButton.js` – accessible button component with inline SVG icon.
+- `src/utils/IconButton.js` – accessible button component with inline SVG icon.
 
 ## Functionality
 Server (WordPress):
@@ -126,7 +123,7 @@ Client (React):
 ### Service Worker (offline + caching)
 - Served from `/sw.js` with root scope, implemented in PHP: `functions/service-worker.php`.
 - Strategies:
-  - CacheFirst for theme assets (`build/index.js`, `build/app.css`) and fonts under `/assets/fonts/*`.
+  - CacheFirst for theme assets (`build/index.js`, `build/app.css`) and fonts under `/assets/fonts/*` as well as SVGs under `/assets/svg/*`.
   - Stale-While-Revalidate for REST `GET /wp-json/*`.
 - On theme activation, rewrite rules are flushed automatically so `/sw.js` works immediately.
 
@@ -163,6 +160,7 @@ The theme ships SCSS organized under `src/styles/` (7-1 inspired). The entry poi
 
 Key folders:
 - `abstracts/` variables, mixins, functions, breakpoints (`@mixin breakpoint($bp)`)
+ - `abstracts/` variables, mixins, functions, breakpoints (`@mixin breakpoint($bp, $type: min)` supports `min`|`max`)
 - `base/` base layout, typography, WordPress core helpers (alignfull/alignwide)
 - `layout/`, `components/`, `blocks/`, `pages/`, `plugins/`, `themes/`
 

@@ -1,0 +1,7 @@
+.nk-svg-icon {
+    .theme-dark & {
+        svg {
+            filter: invert(1);
+        }
+    }
+}

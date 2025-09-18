@@ -2,4 +2,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    // Dark mode icon inversion
+    .theme-dark & {
+        &__icon svg {
+            filter: invert(1);
+        }
+    }
 }

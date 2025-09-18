@@ -1,6 +1,7 @@
 <?php
 /**
  * REST API custom endpoints and fields for NK React Theme
+ * 
  * @package nk-react
  * @license GPL-2.0-or-later
  * @link    https://netzkundig.com/

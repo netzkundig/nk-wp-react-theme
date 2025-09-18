@@ -80,6 +80,9 @@ function nkreact_body_classes($classes) {
 }
 add_filter('body_class', 'nkreact_body_classes');
 
+// Include cleanup of wp_head and other elements. Move this to a MU-plugin to keep it active when switching themes.
+require get_template_directory() . '/functions/cleanup.php';
+
 // Include custom REST API endpoints and fields
 require get_template_directory() . '/functions/rest-api.php';
 

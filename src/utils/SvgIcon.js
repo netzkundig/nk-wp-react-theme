@@ -36,21 +36,24 @@ function ensureResponsiveSvg(svg) {
  *
  * Props:
  *  - src?: string           // absolute or relative url to .svg
- *  - name?: string          // basename under assets/svg (e.g. 'logo') resolves to `${assetsBase}/${name}.svg`
+ *  - iconName?: string      // basename under assets/svg (e.g. 'logo') resolves to `${assetsBase}/${iconName}.svg`
+ *  - name?: string          // DEPRECATED alias for iconName (kept for backward compatibility)
  *  - assetsBase?: string    // base path for named svgs (default: '/wp-content/themes/nk-react/assets/svg')
  *  - title?: string         // accessible title
  *  - decorative?: boolean   // if true, hides from a11y tree (aria-hidden)
  *  - className?: string
  *  - style?: React.CSSProperties
  *
- * Either provide src or name.
+ * Either provide src or iconName.
  */
-export default function SvgIcon({ src, name, assetsBase = '/wp-content/themes/nk-react/assets/svg', title, decorative = false, className, style }) {
+export default function SvgIcon({ src, iconName, name, assetsBase = '/wp-content/themes/nk-react/assets/svg', title, decorative = false, className, style }) {
   const url = useMemo(() => {
     if (src) return src;
-    if (name) return `${assetsBase.replace(/\/$/, '')}/${name}.svg`;
+    // Prefer new prop iconName; fall back to deprecated name
+    const resolvedName = iconName || name;
+    if (resolvedName) return `${assetsBase.replace(/\/$/, '')}/${resolvedName}.svg`;
     return null;
-  }, [src, name, assetsBase]);
+  }, [src, iconName, name, assetsBase]);
 
   const [markup, setMarkup] = useState(null);
   const [error, setError] = useState(null);
@@ -90,15 +93,19 @@ export default function SvgIcon({ src, name, assetsBase = '/wp-content/themes/nk
 
   // We ensure title isn't duplicated – if you need an inner <title>, you can include it in the SVG source
   const mergedStyle = {
-    display: 'inline-block',
     width: '24px',
     height: '24px',
     ...style,
   };
 
+  // Merge additional classnames and always add base class
+  const classNames = ['nk-svg-icon'];
+  if (className) classNames.push(className);
+  const classNameStr = classNames.join(' ');
+
   return (
     <span
-      className={className}
+      className={classNameStr}
       style={mergedStyle}
       // ESLint: we deliberately inline sanitized SVG markup
       dangerouslySetInnerHTML={{ __html: markup }}
