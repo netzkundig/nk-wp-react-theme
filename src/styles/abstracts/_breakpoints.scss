@@ -26,3 +26,10 @@ $breakpoints: (
     @media (min-width: $size) { @content; }
   }
 }
+
+// Add all Brekapoints as variables to :root for easier access in CSS
+:root {
+  @each $name, $size in $breakpoints {
+    --breakpoint-#{$name}: #{$size};
+  }
+}
