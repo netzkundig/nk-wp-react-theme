@@ -130,6 +130,12 @@ require \get_template_directory() . '/functions/cleanup.php';
 // Include custom REST API endpoints and fields
 require \get_template_directory() . '/functions/rest-api.php';
 
+// Include centralized theme supports configuration
+require \get_template_directory() . '/functions/theme-supports.php';
+
+// Disable Customizer (capability, menu, admin bar, access)
+require \get_template_directory() . '/functions/disable-customizer.php';
+
 // Include menu registrations
 require \get_template_directory() . '/functions/menus.php';
 
