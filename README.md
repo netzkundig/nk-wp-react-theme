@@ -2,6 +2,14 @@
 
 Minimalist WordPress theme with React integration to render WordPress content on the client side via the REST API.
 
+## What's new
+
+- Improved offline support: service worker now provides an offline shell, precaches a friendly `offline.html`, and registers robustly across paths (avoids redirect issues) with a HEAD probe + fallback.
+- Refined primary menu navigation: accurate internal link detection, SPA-aware keyboard navigation, and accessible active state reflecting WordPress classes (current item/parent/ancestor).
+- Internal links inside content are intercepted to navigate via the SPA without full page reloads while preserving standard browser behaviors (middle/Cmd/Ctrl click, target, hash-only).
+- Gravity Forms assets are ensured in SPA context: CSS and JS are discovered via a REST endpoint and injected when needed.
+- Router configuration updated to derive the base path dynamically from the site URL, supporting installations in subdirectories.
+
 ## Language Policy
 - Use English for all code comments and all commit messages (including AI-generated ones).
 - Git hooks are provided to help enforce this. Enable them with:
@@ -26,10 +34,20 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - SVG icons utility: inline and cache SVGs safely via `SvgIcon` (sanitized, default 24px size).
 - Icon button utility: accessible button with SVG icon via `IconButton` (visible label or `aria-label`).
 
+- Router base path derived dynamically from `window.nkReactTheme.siteUrl` for subdirectory installs (react-router `basename`).
+- SPA interception for internal links inside rendered content (preserves middle/Cmd/Ctrl clicks, `target` and hash-only scrolls).
+- Primary menu a11y and UX: keyboard navigation (Arrow/Home/End/Escape), active state via `aria-current`, and WordPress-like classes (`current-menu-item`, `current-menu-parent`, `current-menu-ancestor`).
+- Gravity Forms CSS and JS auto-loaded in SPA flows via a discovery REST endpoint and fallback paths.
+
 ## Gravity Forms (REST Submit)
 - Client renders WP content (including GF shortcodes/blocks) and intercepts GF form submits in React.
 - Submissions are sent to GF REST v2: `/wp-json/gf/v2/forms/{id}/submissions`.
 - Inline validation and confirmation are rendered in place.
+
+### Assets loading (SPA)
+- The theme exposes candidate GF CSS files from PHP and provides a REST endpoint `GET /wp-json/nk/v1/gf-assets` to list available GF CSS/JS assets.
+- On SPA navigations, `initGravityForms` ensures CSS and JS are present by probing the endpoint, injecting missing assets, and falling back to common plugin paths.
+- This avoids missing styling or scripts when forms are rendered dynamically.
 
 ### Setup
 - Enable REST submissions for the form in Gravity Forms (Form Settings → “Submit via REST API”).
@@ -38,7 +56,7 @@ Minimalist WordPress theme with React integration to render WordPress content on
 
 ### Files
 - `src/utils/initGravityForms.js`: binds submit and posts JSON to GF REST; shows confirmation or field errors.
-- `src/Page.js` / `src/Post.js`: after injecting content, call `initGravityForms` on the content container.
+- `src/Page.js` / `src/Post.js`: after injecting content, call `initGravityForms` on the content container and bind link interception for SPA navigation.
 
 ### Validation & UX
 - Highlights invalid fields with `.gfield_error` and per-field messages.
@@ -48,7 +66,7 @@ Minimalist WordPress theme with React integration to render WordPress content on
 ### Notes
 - reCAPTCHA: works if site keys are configured; tokens from hidden inputs are forwarded.
 - File uploads: current JSON submit handler doesn’t support files. Use admin-ajax fallback or extend to multipart if needed.
-- Styles: if GF styles are missing in SPA views, enqueue GF CSS globally or add minimal theme styles for `.gform_wrapper`.
+- Styles: if GF styles are missing in SPA views, the loader will inject them automatically; alternatively enqueue GF CSS globally or add minimal theme styles for `.gform_wrapper`.
 
 ## Requirements
 - WordPress 6.x (permalinks active)
@@ -156,6 +174,11 @@ Client (React):
   - Reads from `localStorage` when version matches; otherwise fetches fresh and stores new version.
   - Skips cache for logged-in users to reflect admin changes immediately.
 
+Accessibility & SPA behavior:
+- Keyboard navigation: Arrow keys move focus between items, Home/End jump to first/last, Escape closes active submenus.
+- Active states: uses `aria-current` and mirrors WordPress classes (`current-menu-item`, `current-menu-parent`, `current-menu-ancestor`).
+- Link behavior: preserves middle/Cmd/Ctrl click; safely supports `target="_blank"` (adds `rel="noopener noreferrer"`).
+
 ### SWR Caching (Pages, Posts, Resolver)
 - Hooks in `src/utils/wpSWR.js` provide SWR behavior for pages (`useWPPage`), posts (`useWPPost`) and route resolution (`useResolvePath`).
 - Cache keys are namespaced by site URL and auth state, data lives in memory and `localStorage`.
@@ -170,7 +193,12 @@ Client (React):
 - Strategies:
   - CacheFirst for theme assets (`build/index.js`, `build/app.css`) and fonts under `/assets/fonts/*` as well as SVGs under `/assets/svg/*`.
   - Stale-While-Revalidate for REST `GET /wp-json/*`.
+  - Offline Shell: navigation requests use NetworkFirst with a cached root HTML fallback (the start page is precached during install). Additionally, a friendly fallback page `offline.html` is precached and served when available.
 - On theme activation, rewrite rules are flushed automatically so `/sw.js` works immediately.
+
+Registration robustness:
+- The registration probes `/sw.js` with `HEAD` to avoid redirects and falls back to `/?service_worker=1` with the same worker script when necessary.
+- This improves cross-path reliability (notably on Safari or strict server configs).
 
 ## Data flow
 1. PHP injects `window.nkReactTheme` (shape example):
@@ -440,7 +468,11 @@ Tip: Prefetch respects Data Saver and won’t run if the browser signals reduced
 Current approach:
 - WP handles initial request (full page load) → universal index template.
 - React mounts & resolves the same path via `nk/v1/resolve`.
-- When `react-router-dom` is added, internal `<Link>` transitions skip full reloads.
+- `react-router-dom` is integrated: internal transitions use SPA navigation and re-render reliably.
+
+Base path (subdirectory support):
+- The router `basename` is derived at runtime from `window.nkReactTheme.siteUrl`, so installs under a subdirectory (e.g. `/blog/`) work without manual changes.
+- Routes are keyed by `location.pathname` to force re-render on path changes after resolution.
 
 Add client router:
 ```bash
@@ -452,6 +484,10 @@ Extending resolver:
 - Archives: detect `is_post_type_archive()` or taxonomy queries server-side if needed (add logic to the resolver endpoint).
 - Search: if `path` starts with `/search/` parse query segment.
 - Pagination: include `paged` parameter in resolver result.
+
+Internal links inside content (SPA):
+- The utility `src/utils/interceptLinks.js` delegates click handling inside rendered HTML.
+- It detects internal links (relative or same-origin), navigates via the router, and preserves default browser behaviors (modifiers, `target`), including hash-only scrolls.
 
 ## Security & Notes
 - `dangerouslySetInnerHTML` only renders server-filtered WP content (respect WP sanitization pipeline).
@@ -498,7 +534,7 @@ body { transition: background var(--nk-transition), color var(--nk-transition); 
 ```
 
 ## Possible Enhancements
-- Add service worker for offline shell.
+- Add service worker for offline shell. (Done)
 - Implement incremental static hydration (progressively replace SSR fragments).
 - Add schema injection per route (JSON-LD) via small PHP helper + JS overrides.
 - Introduce a data cache context (LRU) to avoid duplicate REST fetches on quick route changes.
