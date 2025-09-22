@@ -3,6 +3,8 @@ import { __ } from '@wordpress/i18n';
 import BlockBodyClass from './utils/BlockBodyClass';
 import { initGravityForms } from './utils/initGravityForms';
 import { useWPPage } from './utils/wpSWR';
+import { setupLinkInterception } from './utils/interceptLinks';
+import { useNavigate } from 'react-router-dom';
 
 const Page = ({ id, ariaBusy }) => {
   const { data, loading, revalidating, error } = useWPPage(id);
@@ -10,11 +12,13 @@ const Page = ({ id, ariaBusy }) => {
   // Hooks must be declared unconditionally at top level
   const contentRef = useRef(null);
 
+  const navigate = useNavigate();
   useEffect(() => {
-    if (contentRef.current) {
-      initGravityForms(contentRef.current);
-    }
-  }, [data?.content?.rendered]);
+    if (!contentRef.current) return;
+    initGravityForms(contentRef.current);
+    const teardown = setupLinkInterception(contentRef.current, navigate);
+    return () => { if (typeof teardown === 'function') teardown(); };
+  }, [data?.content?.rendered, navigate]);
 
 
   if (loading && !data) return (

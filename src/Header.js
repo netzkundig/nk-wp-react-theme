@@ -76,8 +76,8 @@ class Header extends Component {
         const { menuCollapsed, isWide } = this.state;
     const siteUrl = (window.nkReactTheme?.siteUrl) || '/';
     const siteTitle = (window.nkReactTheme?.siteTitle) || __('NK React Theme', 'nk-react');
-    let homePath = '/';
-    try { homePath = new URL(siteUrl).pathname || '/'; } catch (_e) { homePath = '/'; }
+    // Always link to Router root; BrowserRouter will prepend basename automatically
+    const homePath = '/';
         const headerStyle = {
             paddingTop: 'var(--wp--preset--spacing--30)',
             paddingBottom: 'var(--wp--preset--spacing--30)',

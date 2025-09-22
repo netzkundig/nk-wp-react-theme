@@ -154,4 +154,87 @@ namespace NkReact\Theme\REST;
             return new \WP_REST_Response(['version' => $hash], 200);
         }
     ));
+
+    // Gravity Forms assets discovery: list front-end CSS/JS files from the plugin directory
+    \register_rest_route('nk/v1', '/gf-assets', array(
+        'methods'             => 'GET',
+        'permission_callback' => '__return_true',
+        'callback'            => function () {
+            if (!\class_exists('GFForms')) {
+                return new \WP_REST_Response(['css' => [], 'js' => []], 200);
+            }
+            $base_file = 'gravityforms/gravityforms.php';
+            $base_url  = \plugins_url('', $base_file);
+            $base_path = \WP_PLUGIN_DIR . '/gravityforms';
+            $css_dirs = [
+                $base_path . '/assets/css/dist',
+                $base_path . '/assets/css',
+                $base_path . '/css',
+            ];
+            $js_dirs = [
+                $base_path . '/assets/js/dist',
+                $base_path . '/assets/js',
+                $base_path . '/js',
+            ];
+
+            $list_files = function(array $dirs, array $exts) {
+                $out = [];
+                foreach ($dirs as $dir) {
+                    if (!\is_dir($dir)) continue;
+                    $iter = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
+                    foreach ($iter as $file) {
+                        if (!$file->isFile()) continue;
+                        $path = $file->getPathname();
+                        $lower = strtolower($path);
+                        $ok = false;
+                        foreach ($exts as $ex) { if (str_ends_with($lower, $ex)) { $ok = true; break; } }
+                        if (!$ok) continue;
+                        $out[] = $path;
+                    }
+                }
+                return $out;
+            };
+
+            $css_files = $list_files($css_dirs, ['.min.css', '.css']);
+            $js_files  = $list_files($js_dirs, ['.min.js', '.js']);
+
+            // Prefer stable front-end assets
+            $score_css = function($path) {
+                $f = strtolower(basename($path));
+                $score = 0;
+                if (str_contains($f, 'reset')) $score += 100;
+                if (str_contains($f, 'foundation')) $score += 80;
+                if (str_contains($f, 'framework')) $score += 60;
+                if (str_contains($f, 'theme')) $score += 60;
+                if (str_contains($f, '.min.css')) $score += 10;
+                return -$score; // for ascending sort
+            };
+            $score_js = function($path) {
+                $f = strtolower(basename($path));
+                $score = 0;
+                if (str_contains($f, 'gravityforms')) $score += 100;
+                if (str_contains($f, 'conditional')) $score += 90;
+                if (str_contains($f, 'utils')) $score += 80;
+                if (str_contains($f, 'vendor-theme')) $score += 70;
+                if (str_contains($f, 'scripts-theme')) $score += 70;
+                if (str_contains($f, 'recaptcha')) $score += 40;
+                if (str_contains($f, '.min.js')) $score += 10;
+                return -$score;
+            };
+            usort($css_files, function($a, $b) use ($score_css) { return $score_css($a) <=> $score_css($b); });
+            usort($js_files, function($a, $b) use ($score_js) { return $score_js($a) <=> $score_js($b); });
+
+            $to_url = function($path) use ($base_path, $base_url) {
+                $rel = str_replace($base_path, '', $path);
+                $rel = str_replace(DIRECTORY_SEPARATOR, '/', $rel);
+                return $base_url . $rel;
+            };
+            $css_urls = array_values(array_unique(array_map($to_url, $css_files)));
+            $js_urls  = array_values(array_unique(array_map($to_url, $js_files)));
+            // Limit to a reasonable number
+            $css_urls = array_slice($css_urls, 0, 10);
+            $js_urls  = array_slice($js_urls, 0, 10);
+            return new \WP_REST_Response(['css' => $css_urls, 'js' => $js_urls], 200);
+        }
+    ));
 });

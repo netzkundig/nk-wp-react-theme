@@ -58,6 +58,25 @@ if (\file_exists($autoload)) {
         'isUserLoggedIn' => \is_user_logged_in(),
         'currentUserId'  => \get_current_user_id(),
     );
+    // Provide Gravity Forms asset URLs so React app can load CSS when forms are injected via REST
+    if (\class_exists('GFForms')) {
+        $gf_base_url  = \plugins_url('', 'gravityforms/gravityforms.php');
+        $gf_base_path = \WP_PLUGIN_DIR . '/gravityforms';
+        $candidates = array(
+            '/assets/css/dist/reset.min.css',
+            '/assets/css/dist/formsmain.min.css',
+            '/assets/css/dist/readyclass.min.css',
+        );
+        $gf_css = array();
+        foreach ($candidates as $rel) {
+            if (\file_exists($gf_base_path . $rel)) {
+                $gf_css[] = $gf_base_url . $rel;
+            }
+        }
+        if (!empty($gf_css)) {
+            $bootstrap['gfAssets'] = array('css' => $gf_css);
+        }
+    }
     \wp_add_inline_script('nk-react-app', 'window.nkReactTheme = ' . \wp_json_encode($bootstrap) . ';', 'before');
     // Provide REST API credentials for frontend scripts (e.g., blocks using api-fetch)
     $wp_rest_nonce = \wp_create_nonce('wp_rest');

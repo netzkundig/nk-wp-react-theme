@@ -4,9 +4,12 @@
 
 @use '../abstracts/breakpoints' as bp;
 
+// Menu active item styles
+.menu-item.is-active > a {
+    text-decoration: none;
+}
+
 // Primary menu styles
-
-
 .primary-menu {
     display: flex;
     list-style: none;

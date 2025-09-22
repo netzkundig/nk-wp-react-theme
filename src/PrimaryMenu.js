@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useHref } from 'react-router-dom';
+import { useResolvePath } from './utils/wpSWR';
 
 const buildTree = (items) => {
   const byId = new Map(items.map(i => [String(i.id), { ...i, children: [] }]));
@@ -26,21 +27,100 @@ const isActiveUrl = (href, pathname, siteUrl) => {
   }
 };
 
-const NavItem = ({ node, pathname, siteUrl }) => {
+// Determine whether a menu URL is internal (same-origin) relative to siteUrl
+const isInternalUrl = (href, siteUrl, explicitIsExternal) => {
+  if (typeof explicitIsExternal === 'boolean') return !explicitIsExternal;
+  try {
+    const u = new URL(href, siteUrl);
+    const base = new URL(siteUrl);
+    return u.origin === base.origin;
+  } catch (_e) {
+    return false;
+  }
+};
+
+// Convert an absolute URL into a router-relative path (/path?query#hash)
+const toRouterPath = (href, siteUrl) => {
+  try {
+    const u = new URL(href, siteUrl);
+    return (u.pathname || '/') + (u.search || '') + (u.hash || '');
+  } catch (_e) {
+    return '/';
+  }
+};
+
+// Internal Link that preserves middle/ctrl/cmd click behavior (opens in new tab)
+const InternalNavLink = ({ to, children, rel, target, className, style, ...rest }) => {
+  const navigate = useNavigate();
+  const href = useHref(to);
+  const onClick = (e) => {
+    // If target requests a new browsing context, let the browser handle it
+    if (target === '_blank') {
+      return;
+    }
+    // Let the browser handle if default already prevented or it's not a plain left click
+    if (
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey || e.ctrlKey || e.altKey || e.shiftKey
+    ) {
+      return;
+    }
+    e.preventDefault();
+    navigate(to);
+  };
+  const relSecure = target === '_blank' ? ['noopener', 'noreferrer'] : [];
+  const relFinal = [rel, ...relSecure].filter(Boolean).join(' ') || undefined;
+  return (
+    <a href={href} onClick={onClick} rel={relFinal} target={target} className={className} style={style} {...rest}>
+      {children}
+    </a>
+  );
+};
+
+const NavItem = ({ node, pathname, siteUrl, selfSet, parentSet, ancestorSet }) => {
   const active = isActiveUrl(node.url, pathname, siteUrl);
   const cls = ['menu-item'];
   if (active) cls.push('is-active');
   if (node.attr?.classes) cls.push(node.attr.classes);
   if (node.children?.length) cls.push('has-children');
+  const internal = isInternalUrl(node.url, siteUrl, node.isExternal);
+  const to = internal ? toRouterPath(node.url, siteUrl) : null;
+  // WP-like active classes based on route/object matching
+  const idKey = String(node.id);
+  const isSelf = selfSet?.has(idKey);
+  const isParent = parentSet?.has(idKey);
+  const isAncestor = ancestorSet?.has(idKey);
+  if (isSelf) {
+    cls.push('current-menu-item');
+    if (node.object === 'page') cls.push('current_page_item');
+  }
+  if (isParent) {
+    cls.push('current-menu-parent', 'current-menu-ancestor');
+    if (node.object === 'page') cls.push('current_page_parent', 'current_page_ancestor');
+  }
+  if (isAncestor) {
+    cls.push('current-menu-ancestor');
+    if (node.object === 'page') cls.push('current_page_ancestor');
+  }
+  const hasChildren = !!node.children?.length;
+  const ariaCurrent = isSelf ? 'page' : undefined;
+  const ariaExpanded = hasChildren && (isSelf || isParent || isAncestor) ? 'true' : undefined;
   return (
     <li className={cls.join(' ')}>
-      <a href={node.url} target={node.attr?.target || undefined} rel={node.attr?.rel || undefined}>
-        {node.title}
-      </a>
+      {internal ? (
+        <InternalNavLink to={to} rel={node.attr?.rel || undefined} target={node.attr?.target || undefined} aria-current={ariaCurrent} aria-haspopup={hasChildren ? 'true' : undefined} aria-expanded={ariaExpanded}>
+          {node.title}
+        </InternalNavLink>
+      ) : (
+        <a href={node.url} target={node.attr?.target || undefined} rel={node.attr?.rel || undefined} aria-current={ariaCurrent} aria-haspopup={hasChildren ? 'true' : undefined} aria-expanded={ariaExpanded}>
+          {node.title}
+        </a>
+      )}
       {node.children?.length ? (
         <ul className="sub-menu">
           {node.children.map(child => (
-            <NavItem key={child.id} node={child} pathname={pathname} siteUrl={siteUrl} />
+            <NavItem key={child.id} node={child} pathname={pathname} siteUrl={siteUrl} selfSet={selfSet} parentSet={parentSet} ancestorSet={ancestorSet} />
           ))}
         </ul>
       ) : null}
@@ -55,8 +135,8 @@ const PrimaryMenu = () => {
   const isLoggedIn = !!window.nkReactTheme?.isUserLoggedIn;
   const LOCATION = 'primary';
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
-  const cacheKey = useMemo(() => `nk-menu:${LOCATION}:${siteUrl.replace(/\/$/, '')}`, [siteUrl]);
-  const versionKey = useMemo(() => `nk-menu-version:${LOCATION}:${siteUrl.replace(/\/$/, '')}`, [siteUrl]);
+  const cacheKey = useMemo(() => `nk-menu:${LOCATION}:${siteUrl.replace(/\/$/, '')}:${isLoggedIn ? 'auth' : 'anon'}`, [siteUrl, isLoggedIn]);
+  const versionKey = useMemo(() => `nk-menu-version:${LOCATION}:${siteUrl.replace(/\/$/, '')}:${isLoggedIn ? 'auth' : 'anon'}`, [siteUrl, isLoggedIn]);
 
   // Returns cache content incl. expired flag in order to also render expired (stale) data initially.
   const readCache = () => {
@@ -154,15 +234,92 @@ const PrimaryMenu = () => {
 
   const busy = loading || revalidating;
 
+  // Keyboard navigation for menu (Arrow keys, Home/End, Escape)
+  const navRef = useRef(null);
+  const onKeyDown = (e) => {
+    const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End', 'ArrowRight', 'ArrowLeft', 'Escape'];
+    if (!keys.includes(e.key)) return;
+    const root = navRef.current;
+    if (!root) return;
+    const links = root.querySelectorAll('a');
+    if (!links.length) return;
+    const active = document.activeElement;
+    let idx = Array.prototype.indexOf.call(links, active);
+    const focusAt = (i) => { if (links[i]) links[i].focus(); };
+    switch (e.key) {
+      case 'Home': e.preventDefault(); focusAt(0); break;
+      case 'End': e.preventDefault(); focusAt(links.length - 1); break;
+      case 'ArrowDown': e.preventDefault(); focusAt(Math.min(links.length - 1, Math.max(0, idx + 1))); break;
+      case 'ArrowUp': e.preventDefault(); focusAt(Math.min(links.length - 1, Math.max(0, idx - 1))); break;
+      case 'ArrowRight': e.preventDefault(); focusAt(Math.min(links.length - 1, Math.max(0, idx + 1))); break;
+      case 'ArrowLeft': e.preventDefault(); focusAt(Math.min(links.length - 1, Math.max(0, idx - 1))); break;
+      case 'Escape': if (active && active instanceof HTMLElement) { active.blur(); } break;
+      default: break;
+    }
+  };
+
+  // Resolve current route (cached via SWR) to mirror WP active classes
+  const { data: route } = useResolvePath(routerLocation.pathname || '/');
+  const blogPageId = window.nkReactTheme?.blogPageId ? Number(window.nkReactTheme.blogPageId) : null;
+
+  // Build parent map for ancestor propagation
+  const parentMap = useMemo(() => {
+    const m = new Map();
+    for (const it of items) m.set(String(it.id), String(it.parent || '0'));
+    return m;
+  }, [items]);
+
+  // Compute matching self items based on route or URL equality
+  const { selfSet, parentSet, ancestorSet } = useMemo(() => {
+    const self = new Set();
+    const parent = new Set();
+    const ancestor = new Set();
+    const curPath = routerLocation.pathname.replace(/\/$/, '') || '/';
+    for (const it of items) {
+      let matches = false;
+      // URL-based match for internal links
+      const internal = isInternalUrl(it.url, siteUrl, it.isExternal);
+      if (internal) {
+        const p = toRouterPath(it.url, siteUrl).replace(/\/$/, '');
+        if (p === curPath) matches = true;
+      }
+      // Route-based match for WP objects
+      if (!matches && route) {
+        const objId = Number(it.objectId || 0);
+        const obj = String(it.object || '');
+        if ((route.type === 'page' || route.type === 'front-page') && obj === 'page' && objId === Number(route.id || 0)) {
+          matches = true;
+        } else if (route.type === 'home' && blogPageId && obj === 'page' && objId === blogPageId) {
+          matches = true;
+        } else if (route.type === 'post' && obj === 'post' && objId === Number(route.id || 0)) {
+          matches = true;
+        }
+      }
+      if (matches) {
+        const k = String(it.id);
+        self.add(k);
+        // propagate to parent/ancestors
+        let pid = parentMap.get(k);
+        if (pid && pid !== '0') {
+          parent.add(pid);
+          ancestor.add(pid);
+          let g = parentMap.get(pid);
+          while (g && g !== '0') { ancestor.add(g); g = parentMap.get(g); }
+        }
+      }
+    }
+    return { selfSet: self, parentSet: parent, ancestorSet: ancestor };
+  }, [items, route, blogPageId, routerLocation.pathname, siteUrl, parentMap]);
+
   return (
     <div className="primary-menu__container">
-    <nav className="primary-menu__nav" aria-label="Primary" aria-busy={busy ? 'true' : undefined}>
+  <nav className="primary-menu__nav" aria-label="Primary" aria-busy={busy ? 'true' : undefined} ref={navRef} onKeyDown={onKeyDown}>
       {error ? (
         <div className="menu-error">{error}</div>
       ) : (
         <ul id="primary-menu" className="primary-menu">
           {tree.map(node => (
-            <NavItem key={node.id} node={node} pathname={routerLocation.pathname} siteUrl={siteUrl} />
+            <NavItem key={node.id} node={node} pathname={routerLocation.pathname} siteUrl={siteUrl} selfSet={selfSet} parentSet={parentSet} ancestorSet={ancestorSet} />
           ))}
         </ul>
       )}

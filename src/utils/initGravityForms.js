@@ -15,7 +15,58 @@ export function initGravityForms(root) {
   const forms = Array.from(
     container.querySelectorAll('.gform_wrapper form[id^="gform_"]')
   );
-  if (!forms.length) return;
+  const hasBodyClass = d.body?.classList?.contains('has-block-gravityforms-form');
+  if (!forms.length && !hasBodyClass) return;
+
+  // Ensure GF CSS is present (robust against SPA navigation)
+  const ensureCSS = () => {
+    const already = Array.from(d.querySelectorAll('link[rel="stylesheet"]')).map(l => l.href);
+    const toAdd = new Set();
+    const fromBootstrap = (w.nkReactTheme && w.nkReactTheme.gfAssets && Array.isArray(w.nkReactTheme.gfAssets.css)) ? w.nkReactTheme.gfAssets.css : [];
+    fromBootstrap.forEach((u) => { if (u && !already.includes(u)) toAdd.add(u); });
+    // Fallback common GF styles if not provided
+    const fallbacks = [
+      '/wp-content/plugins/gravityforms/assets/css/dist/gravity-forms-theme-reset.min.css',
+      '/wp-content/plugins/gravityforms/assets/css/dist/gravity-forms-theme-foundation.min.css',
+      '/wp-content/plugins/gravityforms/assets/css/dist/gravity-forms-orbital-theme.min.css',
+      '/wp-content/plugins/gravityforms/assets/css/dist/gravity-forms-theme-framework.min.css',
+    ];
+    fallbacks.forEach((u) => { if (!already.some(h => h.endsWith(u)) && !already.includes(u)) toAdd.add(u); });
+    toAdd.forEach((href) => {
+      const link = d.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.media = 'all';
+      link.crossOrigin = 'anonymous';
+      d.head.appendChild(link);
+    });
+  };
+  ensureCSS();
+
+  // Ensure GF JS is present when needed
+  const ensureJS = async () => {
+    // If core GF object exists assume scripts loaded
+    if (w.gformInitialized || (w.gf_global && w.gf_global.gf_currency_config)) return;
+    try {
+      const base = (w.nkReactTheme && w.nkReactTheme.siteUrl) || '';
+      const res = await fetch(base.replace(/\/$/, '') + '/wp-json/nk/v1/gf-assets', { credentials: 'same-origin', cache: 'no-store' });
+      const json = await res.json();
+      const scripts = Array.isArray(json?.js) ? json.js : [];
+      const head = d.head;
+      const loaded = new Set(Array.from(d.querySelectorAll('script[src]')).map(s => s.src));
+      for (const src of scripts) {
+        if (!src || loaded.has(src)) continue;
+        await new Promise((resolve) => {
+          const s = d.createElement('script');
+          s.src = src;
+          s.async = true;
+          s.onload = () => resolve();
+          s.onerror = () => resolve();
+          head.appendChild(s);
+        });
+      }
+    } catch (_e) { /* no-op */ }
+  };
 
   // Ensure visibility immediately (SPA injection may bypass GF's show logic)
   const unhide = () => {
@@ -43,6 +94,8 @@ export function initGravityForms(root) {
       // Nothing GF-JS specific here anymore; we keep it minimal for REST flow
       // Ensure still visible after init
       unhide();
+      ensureJS();
+      ensureCSS();
     } catch (_) {
       // no-op: avoid breaking the app if GF isn’t present
     }
@@ -66,7 +119,7 @@ export function initGravityForms(root) {
   }
 
   // Final safeguard: unhide after a short delay in case init stalled
-  setTimeout(unhide, 800);
+  setTimeout(() => { unhide(); ensureCSS(); ensureJS(); }, 800);
 
   // REST submission binding
   const toRestPayload = (formEl, formId) => {

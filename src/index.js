@@ -6,9 +6,19 @@ import { setupLinkHoverPrefetch, setupViewportPrefetch } from './utils/prefetch'
 const container = document.getElementById('app');
 const bootstrap = window.nkReactTheme || {};
 
+let basename = '/';
+try {
+  const raw = bootstrap?.siteUrl || window.location.origin + '/';
+  const u = new URL(raw, window.location.origin);
+  basename = u.pathname || '/';
+} catch (_) { basename = '/'; }
+
+// Expose basename for non-hook consumers (e.g., class components)
+try { window.__NK_ROUTER_BASENAME = basename; } catch (_) {}
+
 const appTree = wpElement.createElement(
   BrowserRouter,
-  null,
+  { basename },
   wpElement.createElement(App, { bootstrap })
 );
 
@@ -25,20 +35,27 @@ if (!container) {
 
 // Register Service Worker for offline + REST runtime cache (scope '/')
 if ('serviceWorker' in navigator) {
-  // Avoid in some dev contexts (e.g., localhost) unless desired
-  const isLocalhost = /^(localhost|127\.|\[::1\])/.test(location.hostname);
-  if (!isLocalhost) {
+  const params = new URLSearchParams(location.search);
+  const swDisabled = (() => {
+    try { return (localStorage.getItem('NK_SW_DISABLE') === '1') || params.has('no-sw'); } catch (_) { return params.has('no-sw'); }
+  })();
+  if (!swDisabled) {
     window.addEventListener('load', async () => {
       const tryRegister = async (url) => navigator.serviceWorker.register(url);
       // Probe with a HEAD request to avoid registering a URL that would redirect (Safari disallows)
       const probe = async () => {
         try {
-          const res = await fetch('/sw.js', { method: 'HEAD', cache: 'no-store', redirect: 'manual' });
-          if (res.status === 200) return '/sw.js';
+          const basePath = (typeof window.__NK_ROUTER_BASENAME === 'string' && window.__NK_ROUTER_BASENAME) ? window.__NK_ROUTER_BASENAME : basename || '/';
+          const swPath = (basePath.endsWith('/') ? basePath : basePath + '/') + 'sw.js';
+          const res = await fetch(swPath, { method: 'HEAD', cache: 'no-store', redirect: 'manual' });
+          if (res.status === 200) return swPath;
           // If redirect indicated or not 200, use query-var endpoint which we ensured doesn’t redirect
-          return '/?service_worker=1';
+          const qv = (basePath.endsWith('/') ? basePath : basePath + '/') + '?service_worker=1';
+          return qv;
         } catch (_) {
-          return '/?service_worker=1';
+          const basePath = (typeof window.__NK_ROUTER_BASENAME === 'string' && window.__NK_ROUTER_BASENAME) ? window.__NK_ROUTER_BASENAME : basename || '/';
+          const qv = (basePath.endsWith('/') ? basePath : basePath + '/') + '?service_worker=1';
+          return qv;
         }
       };
       const url = await probe();

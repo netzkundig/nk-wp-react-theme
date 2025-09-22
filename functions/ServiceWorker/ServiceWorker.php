@@ -45,19 +45,31 @@ class ServiceWorker
         return $redirect_url;
     }
 
-    public static function output_service_worker(): void
-    {
-        if (!\get_query_var('service_worker')) {
-            return;
-        }
+  public static function output_service_worker(): void
+  {
+    // Serve via query var OR direct path fallback (/sw.js) even if rewrites are stale
+    $is_qv = (bool) \get_query_var('service_worker');
+    $req_uri = $_SERVER['REQUEST_URI'] ?? '';
+    $path = is_string($req_uri) ? (string) parse_url($req_uri, PHP_URL_PATH) : '';
+    $is_sw_path = ($path === '/sw.js' || $path === 'sw.js' || str_ends_with($path, '/sw.js'));
+    if (!$is_qv && !$is_sw_path) {
+      return;
+    }
 
-        $site  = \home_url('/');
-        $theme = \get_template_directory_uri();
-        $ver   = '1.0.0';
+  $site  = \home_url('/');
+  $theme = \get_template_directory_uri();
+  // Use theme version for SW version to bust caches on updates
+  $theme_obj = \wp_get_theme();
+  $ver   = $theme_obj ? (string) ($theme_obj->get('Version') ?: '1.0.0') : '1.0.0';
 
-        \nocache_headers();
-        \header('Content-Type: application/javascript; charset=UTF-8');
-        \header('Service-Worker-Allowed: /');
+    \nocache_headers();
+    \header('Content-Type: application/javascript; charset=UTF-8');
+    \header('Service-Worker-Allowed: /');
+    \header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    // Allow HEAD probe with 200 OK (Safari requirement to avoid redirects)
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'HEAD') {
+      exit; // headers only
+    }
 
         echo "\n";
         ?>
@@ -73,13 +85,21 @@ const RUNTIME = 'nk-runtime-' + SW_VERSION;
 
 const PRECACHE_URLS = [
   THEME_URL + '/build/index.js',
-  THEME_URL + '/build/app.css'
+  THEME_URL + '/build/app.css',
+  THEME_URL + '/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(PRECACHE).then((cache) => cache.addAll(PRECACHE_URLS)).catch(() => null)
+    (async () => {
+      try {
+        const cache = await caches.open(PRECACHE);
+        await cache.addAll(PRECACHE_URLS);
+        // Precache the root HTML as our offline shell
+        await cache.add(new Request(SITE_URL, { credentials: 'same-origin' }));
+      } catch (_e) { /* ignore */ }
+    })()
   );
 });
 
@@ -106,6 +126,18 @@ function isAssetRequest(req) {
 
 function isRestGet(req) {
   return req.method === 'GET' && req.url.indexOf(REST_PREFIX) === 0;
+}
+
+function isNavigationRequest(req) {
+  return req.mode === 'navigate' ||
+    (req.method === 'GET' && (req.headers.get('accept') || '').includes('text/html'));
+}
+
+function isAdminPath(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    return u.pathname.startsWith('/wp-admin') || u.pathname.startsWith('/wp-login');
+  } catch (_e) { return false; }
 }
 
 // CacheFirst for theme assets, SWR for REST GET
@@ -139,6 +171,24 @@ self.addEventListener('fetch', (event) => {
       }
       const net = await fetchAndUpdate;
       return net || new Response(null, { status: 503, statusText: 'Offline' });
+    })());
+    return;
+  }
+
+  // Offline Shell for navigations: NetworkFirst with cached root HTML fallback
+  if (isNavigationRequest(req) && !isAdminPath(req.url)) {
+    event.respondWith((async () => {
+      try {
+        const net = await fetch(req);
+        return net;
+      } catch (_e) {
+        // Prefer pretty offline page, else app shell, else minimal fallback
+        const pretty = await caches.match(THEME_URL + '/offline.html', { ignoreSearch: true });
+        if (pretty) return pretty;
+        const shell = await caches.match(SITE_URL, { ignoreSearch: true });
+        if (shell) return shell;
+        return new Response('<!doctype html><title>Offline</title><h1>Offline</h1><p>Please reconnect.</p>', { headers: { 'Content-Type': 'text/html; charset=UTF-8' }, status: 503, statusText: 'Offline' });
+      }
     })());
     return;
   }

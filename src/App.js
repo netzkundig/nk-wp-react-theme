@@ -1,8 +1,18 @@
 import React, { Component } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import RouteResolver from './utils/RouteResolver';
+
+// Wrapper to force rerender on pathname changes by keying the Routes
+const AppRoutes = ({ bootstrap }) => {
+  const location = useLocation();
+  return (
+    <Routes location={location} key={location.pathname}>
+      <Route path="*" element={<RouteResolver bootstrap={bootstrap} />} />
+    </Routes>
+  );
+};
 
 export default class App extends Component {
   state = { lightTheme: true };
@@ -26,9 +36,7 @@ export default class App extends Component {
                 : 'var(--wp--preset--color--base)'
             }}
             className='wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'>
-            <Routes>
-              <Route path="*" element={<RouteResolver bootstrap={bootstrap} />} />
-            </Routes>
+            <AppRoutes bootstrap={bootstrap} />
           </main>
           <Footer lightTheme={lightTheme} />
         </>
