@@ -53,11 +53,11 @@ Minimalist WordPress theme with React integration to render WordPress content on
 ## Requirements
 - WordPress 6.x (permalinks active)
 - Node.js LTS + npm
-- PHP 7.4+ / 8.x
+- PHP 8.2+
 
 ## Installation & Build
 1. put theme folder `nk-react` to `wp-content/themes/nk-react`.
-2. install dependencies in the theme folder:
+2. install JS dependencies in the theme folder:
    ```bash
    npm install
    ```
@@ -65,16 +65,24 @@ Minimalist WordPress theme with React integration to render WordPress content on
    ```bash
    npm install @wordpress/scripts @wordpress/element @babel/preset-react @babel/preset-env --save-dev
    ```
-3. run build:
+3. install PHP autoloader (Composer, PSR-4):
+  ```bash
+  composer install
+  ```
+4. run build:
    ```bash
    npx wp-scripts build
    ```
-4. activate the theme in the WordPress backend.
+5. activate the theme in the WordPress backend.
+
+Notes:
+- The theme uses namespaced PHP with PSR-4 autoloading. Ensure `vendor/autoload.php` exists (run `composer install`).
 
 ## Structure (excerpt)
 - `index.php` – root container `<div id="app"></div>`.
-- `functions.php` – enqueues built script & style, injects bootstrap JSON, registers `nk/v1/resolve`.
-- `functions/service-worker.php` – provides `/sw.js` via rewrite + outputs SW; flushes rewrite rules on theme activation.
+- `functions.php` – namespaced bootstrap (NkReact\\Theme), loads Composer autoloader, enqueues script & style, injects bootstrap JSON.
+- `functions/ServiceWorker/ServiceWorker.php` – class `NkReact\\Theme\\ServiceWorker\\ServiceWorker` provides `/sw.js` via rewrite + outputs SW; flushes rewrite rules on theme activation.
+- `functions/service-worker.php` – legacy stub kept for structure; no logic (actual logic lives in the class above).
 - `babel.config.js` – classic JSX + env.
 - `style.css` – theme header only (WP theme metadata); styles are compiled to `build/app.css`.
 - `src/index.js` – mounts `<App />` with router (if installed) / fallback.
@@ -91,6 +99,41 @@ Minimalist WordPress theme with React integration to render WordPress content on
 - `src/utils/SvgIcon.js` – inline SVG utility component with caching and basic sanitization.
 - `src/utils/index.js` – utility exports (e.g., `SvgIcon`).
 - `src/utils/IconButton.js` – accessible button component with inline SVG icon.
+
+Server PHP (namespaced):
+- `functions/rest-api.php` – `NkReact\\Theme\\REST` (custom endpoints / fields, e.g., resolver, menu, menu-version).
+- `functions/menus.php` – `NkReact\\Theme\\Menus` (registers WP menus).
+- `functions/cleanup.php` – `NkReact\\Theme\\Cleanup` (removes WP head clutter).
+
+Client (React): see sections below.
+
+## PHP Namespacing & Autoloading
+
+This theme uses namespaced PHP with PSR-4 autoloading via Composer.
+
+- Root namespace: `NkReact\\Theme`
+- Sub-namespaces: `ServiceWorker`, `REST`, `Menus`, `Cleanup`
+- Autoload mapping (composer.json):
+  ```json
+  {
+    "autoload": {
+      "psr-4": { "NkReact\\u005cTheme\\u005c": "functions/" }
+    }
+  }
+  ```
+- `functions.php` is namespaced (`namespace NkReact\\Theme;`), loads `vendor/autoload.php` and boots modules. Example:
+  ```php
+  if (\class_exists('NkReact\\\\Theme\\\\ServiceWorker\\\\ServiceWorker')) {
+      \NkReact\\Theme\\ServiceWorker\\ServiceWorker::register();
+  }
+  ```
+- Within namespaced files, global WordPress functions are called with a leading backslash (e.g., `\add_action`, `\get_option`, `\register_nav_menus`).
+- The theme’s `index.php` is intentionally not namespaced.
+
+Pattern for modules:
+- Define a class with static `register()` that attaches all hooks.
+- Place it under `functions/<Area>/<Class>.php` with a matching namespace (e.g., `NkReact\\Theme\\ServiceWorker\\ServiceWorker`).
+- Let Composer autoload it and call `<Namespace>\\<Class>::register()` from `functions.php`.
 
 ## Functionality
 Server (WordPress):
@@ -121,7 +164,9 @@ Client (React):
  - Fetches use `AbortController` and ignore abort errors to avoid transient error flashes (notably in Firefox) when navigations cancel in‑flight requests.
 
 ### Service Worker (offline + caching)
-- Served from `/sw.js` with root scope, implemented in PHP: `functions/service-worker.php`.
+- Served from `/sw.js` with root scope.
+- Implemented as a namespaced class: `functions/ServiceWorker/ServiceWorker.php` → `NkReact\\Theme\\ServiceWorker\\ServiceWorker`.
+- The legacy file `functions/service-worker.php` is a no-op stub kept only to preserve structure.
 - Strategies:
   - CacheFirst for theme assets (`build/index.js`, `build/app.css`) and fonts under `/assets/fonts/*` as well as SVGs under `/assets/svg/*`.
   - Stale-While-Revalidate for REST `GET /wp-json/*`.
@@ -256,7 +301,7 @@ Details:
   - Provide `title` (maps to `aria-label`) for meaningful icons.
 - Security: the markup is sanitized (removes `<script>` and `on*=` handlers, strips `xmlns:xlink`). Only load trusted SVGs.
 - Performance: responses are cached in‑memory per URL during the session.
-- Service Worker: consider adding `/assets/svg/*` to the CacheFirst list in `functions/service-worker.php` if you use many icons.
+- Service Worker: `/assets/svg/*` is included in the CacheFirst list by default (see Service Worker section).
 
 Alternative: If you prefer compile‑time React components with props (e.g., color/size), integrate SVGR in your build and import SVGs as components instead of inlining at runtime.
 
@@ -453,7 +498,6 @@ body { transition: background var(--nk-transition), color var(--nk-transition); 
 ```
 
 ## Possible Enhancements
-- Preload front-page & navigation targets (link hover → prefetch JSON).
 - Add service worker for offline shell.
 - Implement incremental static hydration (progressively replace SSR fragments).
 - Add schema injection per route (JSON-LD) via small PHP helper + JS overrides.

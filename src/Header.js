@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { __ } from '@wordpress/i18n';
 import PrimaryMenu from './PrimaryMenu';
 import { SvgIcon } from './utils';
@@ -73,8 +74,10 @@ class Header extends Component {
     render() {
         const { toggleTheme, lightTheme } = this.props;
         const { menuCollapsed, isWide } = this.state;
-        const siteUrl = (window.nkReactTheme?.siteUrl) || '/';
-        const siteTitle = (window.nkReactTheme?.siteTitle) || __('NK React Theme', 'nk-react');
+    const siteUrl = (window.nkReactTheme?.siteUrl) || '/';
+    const siteTitle = (window.nkReactTheme?.siteTitle) || __('NK React Theme', 'nk-react');
+    let homePath = '/';
+    try { homePath = new URL(siteUrl).pathname || '/'; } catch (_e) { homePath = '/'; }
         const headerStyle = {
             paddingTop: 'var(--wp--preset--spacing--30)',
             paddingBottom: 'var(--wp--preset--spacing--30)',
@@ -97,9 +100,9 @@ class Header extends Component {
                 style={headerStyle}
                 className={`site-header has-global-padding${headerStateClass}`}
             >
-                <a href={siteUrl} rel="home" style={{ color: 'inherit', textDecoration: 'none' }}>
+                <Link to={homePath} rel="home" aria-label={__('Go to front page', 'nk-react')} style={{ color: 'inherit', textDecoration: 'none' }}>
                     {siteTitle}
-                </a>
+                </Link>
                 <PrimaryMenu />
                 <div className="site-header__buttons">
                     <IconButton iconName={"styles"} title={__('Switch Style', 'nk-react')} ariaLabel={__('Switch Style', 'nk-react')} onClick={toggleTheme}>

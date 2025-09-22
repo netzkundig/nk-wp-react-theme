@@ -1,4 +1,5 @@
 <?php
+namespace NkReact\Theme\Menus;
 /**
  * Register Menus for NK React Theme
  * 
@@ -8,9 +9,9 @@
  */
 
 // Register navigation menus
-add_action('after_setup_theme', function () {
-    register_nav_menus(array(
-        'primary' => __('Primary Menu', 'nk-react'),
-        'footer'  => __('Footer Menu', 'nk-react'),
+\add_action('after_setup_theme', function () {
+    \register_nav_menus(array(
+        'primary' => \__('Primary Menu', 'nk-react'),
+        'footer'  => \__('Footer Menu', 'nk-react'),
     ));
 });
